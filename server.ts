@@ -539,10 +539,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 6c. POST /api/runs/:id/retry or /api/runs/:id/resume (Section 16 & 32)
-  const retryMatch = pathname.match(/^\/api\/runs\/([a-zA-Z0-9_-]+)\/(retry|resume)$/);
+  // 6c. POST /api/runs/:id/retry, /resume, or /fallback (Section 16 & 32)
+  const retryMatch = pathname.match(/^\/api\/runs\/([a-zA-Z0-9_-]+)\/(retry|resume|fallback)$/);
   if (retryMatch && req.method === 'POST') {
     const runId = retryMatch[1];
+    const action = retryMatch[2];
     const runPath = path.join(RUNS_DIR, runId);
     if (!fs.existsSync(runPath)) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -565,7 +566,15 @@ const server = http.createServer(async (req, res) => {
         models = meta.models;
       } catch {}
     }
-    models = { ...models, reviewerFallback: true };
+    const config = loadConfig();
+    const fallbackActive = action === 'fallback' ? true : (models?.reviewerFallback ?? true);
+    models = {
+      codexModel: models?.codexModel || config.defaultModels.codex,
+      claudeModel: models?.claudeModel || config.defaultModels.claude,
+      geminiModel: models?.geminiModel || config.defaultModels.gemini,
+      reasoningEffort: models?.reasoningEffort || 'low',
+      reviewerFallback: fallbackActive,
+    };
 
     const workflow = new WorkflowController({
       userRequest: prompt,

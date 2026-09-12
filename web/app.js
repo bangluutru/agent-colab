@@ -844,11 +844,27 @@ function updateStepper(data, event) {
   if (state === 'BLOCKED' || state === 'FAILED') {
     if (alertBanner) {
       alertBanner.style.display = 'flex';
-      if (alertTitle) alertTitle.textContent = state === 'BLOCKED' ? 'Workflow Blocked' : 'Workflow Failed';
+      if (alertTitle) alertTitle.textContent = state === 'BLOCKED' ? 'Workflow Blocked (Action Required)' : 'Workflow Failed';
+      const blockedMsg = files['blocked.json']?.message || event?.data?.message || event?.data?.error;
       if (alertMessage) {
-        alertMessage.textContent = event?.data?.message || event?.data?.error || (state === 'BLOCKED'
-          ? 'Authentication or review limit reached. Please check terminal and click Retry.'
+        alertMessage.textContent = blockedMsg || (state === 'BLOCKED'
+          ? 'Claude Code subscription authentication is unavailable. Run login in terminal and click Retry.'
           : 'An unhandled execution error occurred.');
+      }
+
+      const snippetBox = document.getElementById('alert-snippet-box');
+      const codeCmd = document.getElementById('alert-code-cmd');
+      const isAuthBlocked = state === 'BLOCKED' && (files['blocked.json']?.reason === 'AUTH_REQUIRED' || (blockedMsg || '').includes('authentication') || (blockedMsg || '').includes('claude auth'));
+      if (snippetBox) {
+        snippetBox.style.display = isAuthBlocked ? 'flex' : 'none';
+        if (codeCmd && files['blocked.json']?.terminalCommand) {
+          codeCmd.textContent = files['blocked.json'].terminalCommand;
+        }
+      }
+
+      const btnFallback = document.getElementById('btn-banner-fallback');
+      if (btnFallback) {
+        btnFallback.style.display = (state === 'BLOCKED') ? 'inline-flex' : 'none';
       }
     }
     if (btnRetry) btnRetry.style.display = 'inline-flex';
@@ -1086,6 +1102,44 @@ async function triggerRetryRun() {
   }
 }
 
+async function triggerFallbackRun() {
+  if (!currentRunId) return;
+
+  const btnFallback = document.getElementById('btn-banner-fallback');
+  const alertBanner = document.getElementById('cockpit-alert-banner');
+  const btnStart = document.getElementById('btn-start-run');
+
+  if (btnFallback) btnFallback.disabled = true;
+
+  try {
+    const res = await fetch(`/api/runs/${currentRunId}/fallback`, { method: 'POST' });
+    const result = await res.json();
+
+    if (result.error) {
+      alert('Could not proceed with fallback: ' + result.error);
+      if (btnFallback) btnFallback.disabled = false;
+      return;
+    }
+
+    if (alertBanner) alertBanner.style.display = 'none';
+    if (btnStart) {
+      btnStart.disabled = true;
+      btnStart.innerHTML = '<span class="btn-icon">⏳</span><span>Collaborating...</span>';
+    }
+
+    // Switch to overview tab
+    const overviewTabBtn = document.querySelector('.tab-btn[data-tab="tab-overview"]');
+    if (overviewTabBtn) overviewTabBtn.click();
+
+    // Reconnect SSE
+    connectRunStream(currentRunId);
+    await loadRunDetails(currentRunId);
+  } catch (err) {
+    alert('Error running fallback: ' + err.message);
+    if (btnFallback) btnFallback.disabled = false;
+  }
+}
+
 function initActionButtons() {
   const btnStart = document.getElementById('btn-start-run');
   const btnCancel = document.getElementById('btn-cancel-run');
@@ -1093,12 +1147,32 @@ function initActionButtons() {
   const btnCockpitCancel = document.getElementById('btn-cockpit-cancel');
   const btnCockpitRetry = document.getElementById('btn-cockpit-retry');
   const btnBannerRetry = document.getElementById('btn-banner-retry');
+  const btnBannerFallback = document.getElementById('btn-banner-fallback');
+  const btnCopyCmd = document.getElementById('btn-copy-auth-cmd');
   const promptInput = document.getElementById('prompt-input');
 
   // Wire retry buttons
   [btnRetry, btnCockpitRetry, btnBannerRetry].forEach((btn) => {
     if (btn) btn.addEventListener('click', triggerRetryRun);
   });
+
+  // Wire fallback button
+  if (btnBannerFallback) {
+    btnBannerFallback.addEventListener('click', triggerFallbackRun);
+  }
+
+  // Wire copy command button
+  if (btnCopyCmd) {
+    btnCopyCmd.addEventListener('click', () => {
+      const codeEl = document.getElementById('alert-code-cmd');
+      if (codeEl) {
+        navigator.clipboard.writeText(codeEl.textContent.trim()).then(() => {
+          btnCopyCmd.textContent = '✅ Copied!';
+          setTimeout(() => { btnCopyCmd.textContent = '📋 Copy'; }, 2000);
+        });
+      }
+    });
+  }
 
   btnStart.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();

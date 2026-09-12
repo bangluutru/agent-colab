@@ -677,6 +677,17 @@ export class WorkflowController {
     const runId = this.getRunId();
     const isResume = this.options.resume || runOptions?.resume;
 
+    // Persist active run metadata immediately
+    const initialRunMeta = {
+      runId,
+      status: isResume ? 'RESUMING' : 'RUNNING',
+      startedAt: new Date().toISOString(),
+      userRequest: this.options.userRequest,
+      workspacePath: this.options.workspacePath,
+      models: this.options.models,
+    };
+    fs.writeFileSync(path.join(this.runDir, 'run.json'), JSON.stringify(initialRunMeta, null, 2), 'utf8');
+
     try {
       // 0. Workspace Preparation
       if (!isResume) {
@@ -939,10 +950,22 @@ export class WorkflowController {
           reason: 'AUTH_REQUIRED',
           agent: 'claude',
           stage: 'REVIEWING',
-          message: 'Claude Code subscription authentication is unavailable. Run in Terminal: claude auth logout && claude update && claude auth login. Then verify: claude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK", then click Retry.',
+          message: 'Claude Code subscription authentication is unavailable. Run in Terminal: claude auth login --email haibangtran@gmail.com, then click Retry.',
+          terminalCommand: 'claude auth login --email haibangtran@gmail.com',
+          verificationCommand: 'claude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK"',
           timestamp: new Date().toISOString(),
         };
         fs.writeFileSync(path.join(this.runDir, 'blocked.json'), JSON.stringify(blockedInfo, null, 2), 'utf8');
+        const blockedRunMeta = {
+          runId,
+          status: 'BLOCKED',
+          blockedAt: new Date().toISOString(),
+          userRequest: this.options.userRequest,
+          workspacePath: this.options.workspacePath,
+          models: this.options.models,
+          blockedReason: blockedInfo.message,
+        };
+        fs.writeFileSync(path.join(this.runDir, 'run.json'), JSON.stringify(blockedRunMeta, null, 2), 'utf8');
         this.logger.log({
           run_id: runId,
           from: 'orchestrator',
