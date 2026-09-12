@@ -1,0 +1,36 @@
+{
+  "name": "agent-collaboration-mvp",
+  "version": "0.1.0",
+  "description": "Multi-agent autonomous collaboration MVP: Antigravity IDE / Gemini 3.8 + Codex CLI + Claude Code CLI",
+  "main": "dist/orchestrator/workflow.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx cli.ts",
+    "dev": "tsx server.ts",
+    "ui": "tsx server.ts",
+    "test": "tsx tests/state-machine.test.ts && tsx tests/schema.test.ts && tsx tests/fallback-review.test.ts",
+    "gate-0": "tsx scripts/gate-0.ts",
+    "e2e": "tsx scripts/test-autonomous-e2e.ts",
+    "test:e2e": "tsx scripts/test-autonomous-e2e.ts",
+    "test:defect": "tsx scripts/test-controlled-defect.ts",
+    "test:interruption": "tsx scripts/test-process-interruption.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "multi-agent",
+    "antigravity",
+    "codex",
+    "claude-code",
+    "gemini"
+  ],
+  "author": "Antigravity Pair",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4"
+  }
+}

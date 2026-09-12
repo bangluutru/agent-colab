@@ -1,0 +1,35 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "The simulation passed an independent capacity and cleanup probe, but mobile controls overflow and the browser verification does not substantiate all acceptance criteria. Build artifacts exist; the supplied results only document unit tests.",
+  "issues": [
+    {
+      "severity": "high",
+      "category": "requirement",
+      "file": "src/style.css",
+      "problem": "At 390px width, the dock is capped at 360px while four non-wrapping buttons, padding, and gaps require more space. The text buttons retain their intrinsic minimum widths, causing controls to overflow the dock and potentially be clipped by the application's overflow:hidden. This violates criterion 5.",
+      "description": "At 390px width, the dock is capped at 360px while four non-wrapping buttons, padding, and gaps require more space. The text buttons retain their intrinsic minimum widths, causing controls to overflow the dock and potentially be clipped by the application's overflow:hidden. This violates criterion 5.",
+      "required_change": "Use a wrapping or two-row mobile layout that accommodates all four controls. Verify every button's bounds and visible focus outline at 390×844 with both automatic-mode labels.",
+      "suggested_fix": "Use a wrapping or two-row mobile layout that accommodates all four controls. Verify every button's bounds and visible focus outline at 390×844 with both automatic-mode labels."
+    },
+    {
+      "severity": "high",
+      "category": "test",
+      "file": "scripts/verify-browser.js",
+      "problem": "The verifier reports full acceptance despite checking only canvas dimensions for mobile layout, omitting the 60-second stress run and final cleanup check, and using a synthetic pointer event instead of actual touch input. Network monitoring starts after navigation and ignores Network.loadingFailed, allowing failed resources to escape detection. Build success is hardcoded rather than established.",
+      "description": "The verifier reports full acceptance despite checking only canvas dimensions for mobile layout, omitting the 60-second stress run and final cleanup check, and using a synthetic pointer event instead of actual touch input. Network monitoring starts after navigation and ignores Network.loadingFailed, allowing failed resources to escape detection. Build success is hardcoded rather than established.",
+      "required_change": "Enable monitoring before navigation, capture loading failures, assert control visibility and bounds, exercise real touch and focused-button keyboard activation, and implement the planned stress and cleanup checks. Run the production build and corrected browser verification, recording actual results or explicit environment limitations.",
+      "suggested_fix": "Enable monitoring before navigation, capture loading failures, assert control visibility and bounds, exercise real touch and focused-button keyboard activation, and implement the planned stress and cleanup checks. Run the production build and corrected browser verification, recording actual results or explicit environment limitations."
+    },
+    {
+      "severity": "medium",
+      "category": "logic",
+      "file": "scripts/verify-browser.js",
+      "problem": "Port 4173 is hardcoded and any HTTP 200 response is treated as the production application. An unrelated server can therefore be tested, while an occupied port returning another status causes an unhandled listen error. The planned occupied-port fallback is absent.",
+      "description": "Port 4173 is hardcoded and any HTTP 200 response is treated as the production application. An unrelated server can therefore be tested, while an occupied port returning another status causes an unhandled listen error. The planned occupied-port fallback is absent.",
+      "required_change": "Start an owned server on an available loopback port, obtain its actual address, and verify that server. Handle startup failures explicitly instead of trusting an arbitrary existing HTTP response.",
+      "suggested_fix": "Start an owned server on an available loopback port, obtain its actual address, and verify that server. Handle startup failures explicitly instead of trusting an arbitrary existing HTTP response."
+    }
+  ],
+  "reviewer": "codex-fallback",
+  "reviewerModel": "gpt-6-astra"
+}

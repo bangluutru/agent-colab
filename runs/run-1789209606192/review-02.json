@@ -1,0 +1,26 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "The staged code matches the supplied implementation, but the browser verification does not establish all acceptance criteria and localhost port conflicts are unhandled. The supplied results show 37 passing tests; independent browser inspection was denied by browser security policy, and build/tests were not rerun in the read-only environment.",
+  "issues": [
+    {
+      "severity": "high",
+      "category": "test",
+      "file": "scripts/verify-browser.js",
+      "problem": "The script claims all acceptance criteria pass without checking several required behaviors. Mobile checks only inspect canvas width and a counter, so clipped or overlapping controls pass. It omits the 60-second auto-fire stress test and subsequent complete cleanup. Network monitoring starts after navigation and ignores Network.loadingFailed, allowing failed resource loads to escape detection. buildResult is hard-coded rather than established by a build result.",
+      "description": "The script claims all acceptance criteria pass without checking several required behaviors. Mobile checks only inspect canvas width and a counter, so clipped or overlapping controls pass. It omits the 60-second auto-fire stress test and subsequent complete cleanup. Network monitoring starts after navigation and ignores Network.loadingFailed, allowing failed resource loads to escape detection. buildResult is hard-coded rather than established by a build result.",
+      "required_change": "Attach monitoring before navigation and capture failed requests. Verify control bounds and overlap at both required viewports, focused-button Enter/Space activation, sustained auto-fire with resource limits, and complete cleanup after disabling auto-fire. Run the production build and record actual build/browser results; report unverified checks explicitly.",
+      "suggested_fix": "Attach monitoring before navigation and capture failed requests. Verify control bounds and overlap at both required viewports, focused-button Enter/Space activation, sustained auto-fire with resource limits, and complete cleanup after disabling auto-fire. Run the production build and record actual build/browser results; report unverified checks explicitly."
+    },
+    {
+      "severity": "medium",
+      "category": "requirement",
+      "file": "scripts/verify-browser.js",
+      "problem": "The application port is fixed at 4173. Any existing HTTP 200 response is assumed to be this application's production server; an occupied port returning another status leads to an unhandled listen error. scripts/serve.js likewise has no port-conflict recovery. This violates the planned occupied-port handling and can verify the wrong application or prevent verification entirely.",
+      "description": "The application port is fixed at 4173. Any existing HTTP 200 response is assumed to be this application's production server; an occupied port returning another status leads to an unhandled listen error. scripts/serve.js likewise has no port-conflict recovery. This violates the planned occupied-port handling and can verify the wrong application or prevent verification entirely.",
+      "required_change": "Start a server serving this project's dist on an available loopback port, handle listen errors, and derive the browser URL from server.address(). Only reuse an existing server after verifying its identity. Add an occupied-port regression test.",
+      "suggested_fix": "Start a server serving this project's dist on an available loopback port, handle listen errors, and derive the browser URL from server.address(). Only reuse an existing server after verifying its identity. Add an occupied-port regression test."
+    }
+  ],
+  "reviewer": "codex-fallback",
+  "reviewerModel": "gpt-6-astra"
+}

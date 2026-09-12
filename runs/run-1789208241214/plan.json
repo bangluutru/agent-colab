@@ -1,0 +1,75 @@
+{
+  "objective": "Build a simple responsive React Todo web app that supports adding, deleting, and completing tasks, persists tasks in localStorage, includes unit tests, and builds successfully with npm run build.",
+  "assumptions": [
+    "Use the existing project tooling and conventions if present; otherwise initialize a minimal React project with Vite.",
+    "Tasks contain an id, text, and completed boolean.",
+    "Tasks are stored locally in the current browser; authentication, backend services, and cross-device synchronization are out of scope.",
+    "Marking a task completed is reversible through a checkbox."
+  ],
+  "requirements": [
+    "Render a task input, Add button, task list, and an empty-state message.",
+    "Add a task through form submission, supporting both the Add button and Enter.",
+    "Trim task text and reject empty or whitespace-only submissions.",
+    "Delete an individual task without affecting other tasks.",
+    "Toggle each task between active and completed, with a visible completed state.",
+    "Restore tasks from localStorage on startup and persist additions, deletions, and completion changes.",
+    "Provide a basic responsive layout with accessible input labels, buttons, and checkboxes.",
+    "Include unit tests for task behavior and persistence.",
+    "Provide working npm test and npm run build scripts."
+  ],
+  "architecture": [
+    "App owns task state, input state, and add, delete, and toggle handlers; keep the small task form and list in this component unless existing conventions favor extraction.",
+    "A small storage module loads, validates, and saves the task array under a stable namespaced localStorage key.",
+    "Initialize task state lazily from storage, then persist task changes through an effect.",
+    "Use stable unique task ids for React keys and mutations; never use array indexes as task identities.",
+    "Suggested files: src/App.jsx, src/App.test.jsx, src/taskStorage.js, src/taskStorage.test.js, src/styles.css, and a test setup file. Follow existing language and filename conventions.",
+    "Use existing test tooling when available; otherwise use Vitest, jsdom, React Testing Library, user-event, and jest-dom."
+  ],
+  "implementation_steps": [
+    "Inspect package.json, source files, and repository instructions. Preserve existing configuration and add only missing React, build, or test setup.",
+    "Implement storage loading and saving with JSON parsing, task-shape validation, and exception handling. Return an empty array for missing or invalid stored data.",
+    "Implement task state with lazy storage initialization. Add immutable handlers for creating a uniquely identified task, deleting by id, and toggling completion by id.",
+    "Build the accessible form, task list, completion checkboxes, delete buttons, and empty state. Clear the input after successful submission.",
+    "Connect persistence to task-state changes so initial loading happens before any save.",
+    "Add minimal responsive CSS using a centered container, flexible controls, wrapping task text, and a visually distinct completed state.",
+    "Configure a non-watch npm test command and implement focused storage and component tests.",
+    "Run the full test suite and npm run build, resolve failures, and manually verify responsive behavior and persistence after reload."
+  ],
+  "edge_cases": [
+    "Empty or whitespace-only input creates no task.",
+    "Duplicate task text is allowed; ids keep completion and deletion independent.",
+    "Long task text and unbroken strings wrap without causing horizontal overflow.",
+    "Deleting the final task restores the empty state and persists an empty array.",
+    "Missing, malformed, or structurally invalid stored data results in an empty task list without crashing.",
+    "Unavailable localStorage or a failed write does not prevent in-memory task operations.",
+    "Restored completed tasks retain their state, and initialization does not overwrite valid stored tasks with an empty array."
+  ],
+  "acceptance_criteria": [
+    "The app uses React and displays an empty state when no tasks exist.",
+    "Submitting valid text by button or Enter adds exactly one incomplete task with trimmed text and clears the input.",
+    "Whitespace-only submissions do not change the list.",
+    "A completion checkbox toggles only its corresponding task and updates its visual state.",
+    "Deleting a task removes only that task, including when multiple tasks have identical text.",
+    "After reload, saved task text, order, and completion states are restored; deleted tasks remain absent.",
+    "Storage errors do not crash the app or disable task operations.",
+    "At 320px and desktop viewport widths, controls remain usable and task text does not cause horizontal overflow.",
+    "Inputs and controls have accessible names and support keyboard operation.",
+    "npm test passes without entering watch mode, and npm run build exits successfully."
+  ],
+  "verification_plan": [
+    "Unit-test storage loading for missing data, valid tasks, malformed JSON, invalid task shapes, and storage read exceptions.",
+    "Unit-test saving for correct serialization and graceful handling of storage write exceptions.",
+    "Component-test the empty state, addition through button and Enter, trimming, rejection of blank input, and input clearing.",
+    "Component-test completion in both directions, targeted deletion, duplicate task text, and deletion of the final task.",
+    "Prepopulate localStorage before rendering and verify restored content and completion state. Verify persisted data after add, toggle, and delete operations, then remount to confirm restoration.",
+    "Clear localStorage and restore mocks between tests to prevent test-order dependence.",
+    "Run npm test and npm run build from the project root and confirm both exit successfully.",
+    "Manually check narrow and desktop layouts, long text wrapping, keyboard operation, and persistence across a real browser reload."
+  ],
+  "risks": [
+    "Existing project configuration may require adapting the suggested file structure or test setup; avoid replacing working tooling.",
+    "Browser storage can be blocked, cleared, or exceed quota, so persistence is best effort when storage operations fail.",
+    "Incorrect initialization order can erase saved tasks; lazy loading and restoration tests must guard against this.",
+    "Multiple open tabs can overwrite each other's changes; cross-tab synchronization is outside the requested scope."
+  ]
+}

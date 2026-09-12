@@ -1,0 +1,78 @@
+{
+  "objective": "Xây dựng ứng dụng bắn pháo hoa chạy trên trình duyệt, sau đó build và mở ứng dụng trên localhost để kiểm chứng hoạt động thực tế.",
+  "assumptions": [
+    "Yêu cầu chưa chỉ định framework; ưu tiên công nghệ và cấu trúc có sẵn trong dự án. Nếu dự án trống, dùng Vite với JavaScript thuần và HTML Canvas 2D.",
+    "Ứng dụng gồm một trang, không cần backend, tài khoản, cơ sở dữ liệu hoặc dịch vụ bên ngoài.",
+    "Bắn pháo hoa được hiểu là hiệu ứng hoạt hình: tên lửa bay lên rồi nổ thành các hạt sáng nhiều màu.",
+    "Mặc định không có âm thanh; hỗ trợ chuột và thao tác chạm."
+  ],
+  "requirements": [
+    "Hiển thị nền trời tối với vùng vẽ pháo hoa thích ứng kích thước cửa sổ trên máy tính và điện thoại.",
+    "Cho phép người dùng nhấp hoặc chạm vào vùng vẽ để phóng pháo hoa về vị trí đã chọn.",
+    "Mỗi quả pháo có giai đoạn bay lên, phát nổ và các hạt sáng tỏa ra, rơi xuống rồi mờ dần.",
+    "Có chế độ bắn tự động và nút bật/tắt chế độ này.",
+    "Hiển thị hướng dẫn thao tác ngắn bằng tiếng Việt và nút bắn để có thể sử dụng bằng bàn phím.",
+    "Giới hạn số lượng hiệu ứng đang hoạt động và thu hồi hạt hết thời gian sống để tránh tăng tài nguyên không giới hạn.",
+    "Chạy build thành công, khởi động bản đã build trên localhost và mở trình duyệt để kiểm chứng."
+  ],
+  "architecture": [
+    "Trang giao diện: chứa Canvas toàn màn hình, hướng dẫn và các nút điều khiển HTML có nhãn rõ ràng.",
+    "Bộ mô phỏng pháo hoa: quản lý tên lửa, hạt nổ, vận tốc, trọng lực, độ mờ và thời gian sống; tách cập nhật trạng thái khỏi thao tác vẽ để kiểm thử độc lập.",
+    "Bộ điều phối Canvas: quản lý requestAnimationFrame, kích thước, mật độ điểm ảnh và vòng đời hoạt hình.",
+    "Bộ điều khiển tương tác: xử lý Pointer Events, nút bắn và chế độ tự động; không nhận thao tác trên nút thành thao tác bắn vào Canvas.",
+    "Nếu dự án trống, cấu trúc tối thiểu gồm index.html, src/main.js, src/fireworks.js, src/style.css và tệp kiểm thử mô phỏng; nếu có dự án, ánh xạ các phần này vào cấu trúc hiện hữu.",
+    "Dùng công cụ build và kiểm thử hiện có; chỉ thêm công cụ tối thiểu khi dự án chưa có."
+  ],
+  "implementation_steps": [
+    "Kiểm tra cấu trúc dự án, hướng dẫn AGENTS.md nếu có, package.json và các lệnh build/test hiện hữu; xác định điểm tích hợp trước khi thay đổi.",
+    "Thiết lập trang Canvas, nền tối, hướng dẫn tiếng Việt, nút bắn và nút bật/tắt tự động; bố trí điều khiển phù hợp màn hình nhỏ.",
+    "Xây dựng mô hình tên lửa và hạt với cập nhật theo thời gian thực giữa các khung hình; cho phép truyền nguồn ngẫu nhiên cố định trong kiểm thử.",
+    "Cài đặt chuyển trạng thái tên lửa sang vụ nổ khi tới mục tiêu, tạo hạt nhiều màu và loại bỏ hạt khi hết thời gian sống.",
+    "Cài đặt vẽ hoạt hình bằng một vòng requestAnimationFrame, tạo vệt sáng và xử lý thay đổi kích thước Canvas theo devicePixelRatio có giới hạn.",
+    "Kết nối thao tác nhấp/chạm và nút bắn; thêm bộ đếm thời gian trong vòng hoạt hình để bắn tự động, tránh tạo nhiều timer.",
+    "Áp dụng giới hạn tên lửa và hạt, chặn khoảng thời gian cập nhật quá lớn, tạm dừng khi tab bị ẩn và đặt lại mốc thời gian khi quay lại.",
+    "Tôn trọng prefers-reduced-motion bằng cách tắt tự động lúc khởi tạo khi tùy chọn này bật; vẫn cho phép người dùng chủ động bắn.",
+    "Viết và chạy kiểm thử mô phỏng, chạy các kiểm tra sẵn có phù hợp với thay đổi, rồi chạy build sản xuất.",
+    "Khởi động máy chủ preview phục vụ bản build trên địa chỉ loopback; nếu cổng mặc định bận, chọn cổng trống và lấy URL thực tế từ đầu ra máy chủ.",
+    "Mở URL localhost bằng công cụ trình duyệt, kiểm chứng giao diện và tương tác, kiểm tra lỗi console và tải tài nguyên; sửa lỗi và kiểm tra lại phần bị ảnh hưởng.",
+    "Giữ máy chủ chạy để người dùng kiểm tra và bàn giao URL localhost, kết quả build cùng kết quả xác minh; nếu môi trường không hỗ trợ mở trình duyệt, báo rõ phần chưa kiểm chứng."
+  ],
+  "edge_cases": [
+    "Nhấp hoặc chạm liên tục: bỏ qua lượt phóng mới khi đạt giới hạn; không tạo hàng đợi tăng vô hạn.",
+    "Chạm gần mép hoặc sát đáy: chuẩn hóa tọa độ và giới hạn mục tiêu trong vùng hợp lệ để tên lửa vẫn có quãng bay.",
+    "Đổi kích thước hoặc xoay màn hình: cập nhật vùng vẽ và tọa độ tương tác, không tạo thêm vòng hoạt hình.",
+    "Màn hình có mật độ điểm ảnh cao: giới hạn tỷ lệ render để cân bằng độ nét và chi phí vẽ.",
+    "Tab bị ẩn lâu: khi quay lại không phóng bù hàng loạt hoặc cập nhật vật lý bằng khoảng thời gian quá lớn.",
+    "Tắt chế độ tự động: ngừng phóng mới nhưng để các quả pháo hiện có kết thúc.",
+    "Thiết bị cảm ứng: một lần chạm chỉ tạo một lần phóng, không bị lặp bởi sự kiện chuột tổng hợp.",
+    "Canvas 2D không khả dụng: hiển thị thông báo tiếng Việt thay vì để màn hình trống.",
+    "Cổng localhost đang được sử dụng hoặc công cụ trình duyệt không khả dụng: chọn cổng khác hoặc báo chính xác giới hạn xác minh."
+  ],
+  "acceptance_criteria": [
+    "Ứng dụng mở được từ URL localhost phục vụ bản build, không có lỗi JavaScript chưa xử lý hoặc tài nguyên ứng dụng tải thất bại.",
+    "Nhấp/chạm vào Canvas tạo tên lửa bay tới vùng mục tiêu rồi nổ thành các hạt sáng nhiều màu, mờ dần và biến mất.",
+    "Nút bắn hoạt động bằng chuột, Enter và Space; các điều khiển có trạng thái focus nhìn thấy được.",
+    "Bật chế độ tự động tạo pháo hoa định kỳ; tắt chế độ này ngừng các lượt phóng mới.",
+    "Giao diện dùng được ở kích thước 390×844 và 1440×900, không xuất hiện thanh cuộn ngoài ý muốn hoặc điều khiển bị che.",
+    "Thay đổi kích thước và chuyển tab không làm dừng vĩnh viễn hoạt hình hoặc tạo đợt phóng bù bất thường.",
+    "Số tên lửa và hạt luôn nằm trong giới hạn cấu hình; khi tắt tự động và chờ hết thời gian sống tối đa, mô phỏng không còn đối tượng hoạt động.",
+    "Build và các kiểm thử liên quan đều thành công; trình duyệt đã được mở để kiểm chứng trực tiếp hoặc giới hạn môi trường được ghi nhận rõ."
+  ],
+  "verification_plan": [
+    "Kiểm thử mô phỏng với nguồn ngẫu nhiên cố định: tên lửa di chuyển về mục tiêu, phát nổ đúng một lần và sinh số hạt trong giới hạn.",
+    "Kiểm thử thời gian sống: hạt cập nhật vị trí, giảm độ mờ và được loại bỏ sau thời hạn.",
+    "Kiểm thử giới hạn tài nguyên bằng nhiều yêu cầu phóng liên tiếp; xác nhận số đối tượng không vượt mức cấu hình.",
+    "Kiểm thử bộ điều phối thời gian: bật/tắt tự động không nhân đôi lịch phóng và không phóng bù sau khi tab được kích hoạt lại.",
+    "Chạy lệnh build sản xuất và các lệnh lint/typecheck hiện có nếu áp dụng.",
+    "Mở bản build trên localhost, kiểm tra bắn thủ công, nút bàn phím, chế độ tự động và console trình duyệt.",
+    "Kiểm tra ở viewport máy tính và điện thoại, mô phỏng thao tác chạm, thay đổi kích thước và prefers-reduced-motion.",
+    "Chạy tự động trong ít nhất 60 giây, thử bắn liên tục và chuyển tab; xác nhận ứng dụng còn phản hồi và không phát sinh lỗi.",
+    "Tắt tự động, chờ mọi hiệu ứng kết thúc và xác nhận mô phỏng thu hồi toàn bộ tên lửa cùng hạt."
+  ],
+  "risks": [
+    "Hiệu năng Canvas phụ thuộc thiết bị; cần giới hạn số hạt và mật độ render, không cam kết tốc độ khung hình tuyệt đối.",
+    "Chưa có thông tin về mã nguồn hiện tại; lựa chọn framework và tên tệp phải được xác nhận qua bước khảo sát.",
+    "Hiệu ứng có yếu tố ngẫu nhiên nên kiểm thử mô phỏng cần nguồn ngẫu nhiên cố định; chất lượng hình ảnh cần kiểm tra trực tiếp.",
+    "Quyền chạy tiến trình, mở trình duyệt hoặc thời gian sống của môi trường có thể hạn chế việc duy trì localhost sau khi bàn giao."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "test": "Test 3: Agent Process Interruption & Recovery",
+  "status": "PASSED",
+  "statesVerified": [
+    "IDLE",
+    "REQUEST_RECEIVED",
+    "PLANNING",
+    "INTERRUPTED",
+    "PLANNING",
+    "PLAN_READY"
+  ],
+  "eventsCount": 2,
+  "eventsPreserved": true
+}

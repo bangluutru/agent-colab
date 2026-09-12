@@ -1,0 +1,18 @@
+{
+  "pass": true,
+  "testPass": true,
+  "buildPass": true,
+  "filesExist": true,
+  "testOutput": "> autonomous-app@0.1.0 test\n> vitest run --run\n\n\n RUN  v2.1.9 /Users/tranhaibang/.gemini/antigravity-ide/scratch/agent-collaboration-mvp/workspaces/run-1789209606192/project\n\n ✓ src/fireworks.test.js (13 tests) 5ms\n ✓ scripts/serve.test.js (11 tests) 17ms\n ✓ src/App.test.jsx (16 tests) 1111ms\n   ✓ App Component and Interactive Fireworks > advances simulation progression: rockets travel and burst into particles 349ms\n   ✓ App Component and Interactive Fireworks > performs complete cleanup of active rockets and burst particles 366ms\n\n Test Files  3 passed (3)\n      Tests  40 passed (40)\n   Start at  20:11:29\n   Duration  1.83s (transform 88ms, setup 0ms, collect 257ms, tests 1.13s, environment 973ms, prepare 162ms)",
+  "buildOutput": "> autonomous-app@0.1.0 build\n> vite build\n\nvite v5.4.21 building for production...\ntransforming...\n✓ 34 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                   0.83 kB │ gzip:  0.51 kB\ndist/assets/index-C6YC7bxZ.css    5.05 kB │ gzip:  1.73 kB\ndist/assets/index-Db0bhMM7.js   154.86 kB │ gzip: 50.27 kB\n✓ built in 331ms",
+  "keyFiles": [
+    "dist",
+    "index.html",
+    "package.json",
+    "scripts",
+    "server.log",
+    "src",
+    "vite.config.js"
+  ],
+  "errors": []
+}

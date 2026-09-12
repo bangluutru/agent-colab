@@ -1,0 +1,7 @@
+{
+  "reason": "AUTH_REQUIRED",
+  "agent": "claude",
+  "stage": "REVIEWING",
+  "message": "Claude Code authentication expired. Please run \"claude login\" in your terminal, then click Retry.",
+  "timestamp": "2026-09-12T10:19:56.801Z"
+}

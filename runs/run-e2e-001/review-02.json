@@ -1,0 +1,34 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "Core arithmetic (calculator.js) is correct and well-tested: division-by-zero, -0, overflow, and invalid-input cases all pass and match the exact required wording. npm run test (15/15) and npm run build were independently re-run and succeed. However, the plan's own verification checklist is not fully honored: two explicitly-required edge-case tests (zero-result visibility, stale-output clearing after edit) are missing from App.test.jsx, keyboard 'Enter submits the form' (an explicit acceptance criterion) is untested, and the bonus keypad feature has a real state bug where a stale second operand is reused when chaining operations after a result, producing silently wrong calculations for a plausible usage pattern.",
+  "issues": [
+    {
+      "severity": "high",
+      "category": "logic",
+      "file": "src/App.jsx",
+      "problem": "In onKeypadClick, pressing an operator key after a result exists only resets result/error and sets activeTarget to 'operandB' — it does not clear the stale operandB value. Example: 5 / 2 = 2.5, then press '/' again, then '3', then '=' computes 5 / 23 (since '3' is appended to the leftover '2') instead of the expected chained 2.5 / 3.",
+      "required_change": "When an operator is pressed via the keypad and a result/error is already showing (or the target operand already holds a stale value from a prior calculation), clear operandB (or seed it from the previous result) before switching activeTarget, matching the reset behavior already implemented for digit entry after a result."
+    },
+    {
+      "severity": "medium",
+      "category": "test",
+      "file": "src/App.test.jsx",
+      "problem": "The Codex plan's edge_cases and verification_plan explicitly require (1) confirming a result of exactly 0 remains visible rather than hidden by a truthiness check, and (2) confirming stale output is cleared after editing an operand/operation post-result/error and that a subsequent valid calculation succeeds. Neither is covered by any of the 8 App.test.jsx tests — only the pure calculate() function is tested for a zero result.",
+      "required_change": "Add a component test asserting a 0 result (e.g. 5 - 5) is rendered in the output region, and a test that edits an operand after a result or error is displayed, verifying the stale output disappears and a new calculation subsequently succeeds."
+    },
+    {
+      "severity": "low",
+      "category": "test",
+      "file": "src/App.test.jsx",
+      "problem": "Acceptance criterion 5 requires 'Enter submits the form,' but every test submits via clicking the Calculate button; none exercise keyboard submission.",
+      "required_change": "Add a test that types into an operand input and submits via Enter (e.g. fireEvent.submit(form) or a keyDown on the input inside the form) and asserts the result renders, so this acceptance criterion has explicit coverage."
+    },
+    {
+      "severity": "low",
+      "category": "logic",
+      "file": "src/App.jsx",
+      "problem": "The 'Invalid numeric input' branch (isNaN check after the empty-string check) is effectively unreachable via normal browser input on a type=\"number\" field, since invalid characters are coerced to an empty string by the browser before the empty check runs. This dead branch is untested and cannot be verified with jsdom/fireEvent-based tests either.",
+      "required_change": "Either remove the unreachable branch or make it exercisable (e.g., document how it can be hit, or add a targeted test that sets a NaN-producing value directly via React state/props) so the code has no untested unreachable paths."
+    }
+  ]
+}

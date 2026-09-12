@@ -1,0 +1,17 @@
+{
+  "pass": true,
+  "testPass": true,
+  "buildPass": true,
+  "filesExist": true,
+  "testOutput": "> autonomous-app@0.1.0 test\n> vitest run --run\n\n\n RUN  v2.1.9 /Users/tranhaibang/.gemini/antigravity-ide/scratch/agent-collaboration-mvp/workspaces/run-1789213373511/project\n\n ✓ tests/pipe-manager.test.js (7 tests) 3ms\n ✓ tests/bird.test.js (7 tests) 3ms\n ✓ tests/collision.test.js (6 tests) 3ms\n ✓ tests/storage.test.js (10 tests) 4ms\n ✓ tests/renderer.test.js (4 tests) 6ms\n ✓ tests/game-engine.test.js (10 tests) 12ms\n ✓ tests/flappy-bird.test.jsx (12 tests) 85ms\n\n Test Files  7 passed (7)\n      Tests  56 passed (56)\n   Start at  20:53:54\n   Duration  1.09s (transform 182ms, setup 0ms, collect 484ms, tests 115ms, environment 3.72s, prepare 500ms)",
+  "buildOutput": "> autonomous-app@0.1.0 build\n> vite build\n\nvite v5.4.21 building for production...\ntransforming...\n✓ 40 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                   0.45 kB │ gzip:  0.30 kB\ndist/assets/index-FrK7YKFC.css    5.06 kB │ gzip:  1.68 kB\ndist/assets/index-DbY66a04.js   156.50 kB │ gzip: 50.65 kB\n✓ built in 354ms",
+  "keyFiles": [
+    "dist",
+    "index.html",
+    "package.json",
+    "src",
+    "tests",
+    "vite.config.js"
+  ],
+  "errors": []
+}

@@ -1,0 +1,3 @@
+{"timestamp":"2026-09-12T03:35:12.375Z","run_id":"run-1789184112373","from":"user","to":"orchestrator","type":"USER_REQUEST_RECEIVED","status":"received","data":{"request":"làm chương trình bắn pháo hoa có thể chọn nhiều hình dạng khác nhau"}}
+{"timestamp":"2026-09-12T03:35:12.376Z","run_id":"run-1789184112373","from":"orchestrator","to":"codex","type":"PLAN_REQUESTED","status":"sent","data":{"model":"gpt-5.6-luna"}}
+{"timestamp":"2026-09-12T03:35:54.602Z","run_id":"run-1789184112373","from":"codex","to":"orchestrator","type":"PLAN_RECEIVED","status":"success","data":{"objective":"Xây dựng chương trình mô phỏng bắn pháo hoa cho phép người dùng chọn và hiển thị nhiều hình dạng pháo hoa khác nhau.","stepsCount":13,"criteriaCount":10,"durationMs":42221}}

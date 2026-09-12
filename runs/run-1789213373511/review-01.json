@@ -1,0 +1,53 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "The implementation has a game-over animation loop that never stops, fails responsive landscape sizing, accepts invalid high-score values, and lacks robust touch fallback and coverage for key acceptance criteria.",
+  "issues": [
+    {
+      "severity": "high",
+      "category": "requirement",
+      "file": "src/game/game-engine.js",
+      "problem": "handleGameOver changes status but does not stop requestAnimationFrame. loop() continues scheduling frames and updating/rendering after game over, violating the requirement to stop the game loop.",
+      "description": "handleGameOver changes status but does not stop requestAnimationFrame. loop() continues scheduling frames and updating/rendering after game over, violating the requirement to stop the game loop.",
+      "required_change": "Stop the animation loop when transitioning to GAME_OVER, render the final state once, and explicitly restart exactly one loop when a new game begins.",
+      "suggested_fix": "Stop the animation loop when transitioning to GAME_OVER, render the final state once, and explicitly restart exactly one loop when a new game begins."
+    },
+    {
+      "severity": "medium",
+      "category": "requirement",
+      "file": "src/styles/flappy-bird.css",
+      "problem": "The stage is sized only from viewport width. In mobile landscape, for example, a 380px-wide stage is about 633px tall, causing vertical overflow and page scrolling.",
+      "description": "The stage is sized only from viewport width. In mobile landscape, for example, a 380px-wide stage is about 633px tall, causing vertical overflow and page scrolling.",
+      "required_change": "Constrain stage dimensions using both viewport width and height while preserving the aspect ratio, and verify portrait and landscape layouts without overflow.",
+      "suggested_fix": "Constrain stage dimensions using both viewport width and height while preserving the aspect ratio, and verify portrait and landscape layouts without overflow."
+    },
+    {
+      "severity": "medium",
+      "category": "logic",
+      "file": "src/game/storage.js",
+      "problem": "saveHighScore accepts Infinity because it checks only isNaN, then can persist 'Infinity' and store Infinity in memoryFallbackScore. getHighScore also accepts partially numeric corrupted strings such as '12junk' through parseInt.",
+      "description": "saveHighScore accepts Infinity because it checks only isNaN, then can persist 'Infinity' and store Infinity in memoryFallbackScore. getHighScore also accepts partially numeric corrupted strings such as '12junk' through parseInt.",
+      "required_change": "Require finite, non-negative, safe integer scores and validate stored strings strictly before accepting them.",
+      "suggested_fix": "Require finite, non-negative, safe integer scores and validate stored strings strictly before accepting them."
+    },
+    {
+      "severity": "medium",
+      "category": "requirement",
+      "file": "src/components/FlappyBirdGame.jsx",
+      "problem": "Input handling relies exclusively on onPointerDown. Devices or environments without Pointer Events have no touch or click fallback, despite the plan explicitly requiring this edge case to be handled.",
+      "description": "Input handling relies exclusively on onPointerDown. Devices or environments without Pointer Events have no touch or click fallback, despite the plan explicitly requiring this edge case to be handled.",
+      "required_change": "Add a compatible touch/click fallback with event deduplication so one physical interaction produces at most one flap.",
+      "suggested_fix": "Add a compatible touch/click fallback with event deduplication so one physical interaction produces at most one flap."
+    },
+    {
+      "severity": "medium",
+      "category": "test",
+      "file": "tests",
+      "problem": "The supplied tests do not verify stopping the loop after game over, repeated restart loop counts, touch input or duplicate mouse/touch activation, mobile landscape overflow, or actual build success. The provided results show only vitest output.",
+      "description": "The supplied tests do not verify stopping the loop after game over, repeated restart loop counts, touch input or duplicate mouse/touch activation, mobile landscape overflow, or actual build success. The provided results show only vitest output.",
+      "required_change": "Add tests or browser verification for these acceptance criteria and run npm run build, recording a successful result.",
+      "suggested_fix": "Add tests or browser verification for these acceptance criteria and run npm run build, recording a successful result."
+    }
+  ],
+  "reviewer": "codex-fallback",
+  "reviewerModel": "gpt-5.6-luna"
+}

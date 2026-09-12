@@ -1,0 +1,17 @@
+{
+  "decision": "NON_CONFORMANT",
+  "summary": "The core calculator requirements are satisfied, with 23 passing tests and a successful build reported. However, the implementation does not fully follow the original technical plan.",
+  "missing_items": [
+    "The explicitly planned numeric inputs with type=\"number\" and step=\"any\" were replaced with text inputs.",
+    "Actual keyboard navigation and manual focus verification are not demonstrated; programmatic focus tests and CSS inspection do not establish completion of the planned manual checks."
+  ],
+  "deviations": [
+    "Uses type=\"text\" with inputMode=\"decimal\" and noValidate instead of the planned numeric-input form.",
+    "Adds keypad state and chained calculations beyond the planned minimal two-operand form.",
+    "Adds explicit Enter-key handlers rather than relying solely on native form submission."
+  ],
+  "remaining_risks": [
+    "The reported viewport verification lacks supporting browser measurements or inspection results in the supplied evidence.",
+    "Claude's approval references 19 tests, while the final results report 23; that review does not clearly cover the exact final revision."
+  ]
+}

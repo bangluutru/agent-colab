@@ -1,0 +1,6 @@
+{
+  "reason": "Claude Code CLI authentication required: Not logged in · Please run 'claude login' in terminal",
+  "phase": "REVIEWING",
+  "timestamp": "2026-09-12T09:59:25.755Z",
+  "isAuthError": true
+}

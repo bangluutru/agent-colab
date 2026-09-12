@@ -1,0 +1,35 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "The supplied 37 passing tests cover basic simulation behavior, but mobile controls and browser verification have unresolved defects. Workspace inspection confirmed the relevant code and build artifacts; build and browser execution were not independently rerun in this read-only review.",
+  "issues": [
+    {
+      "severity": "high",
+      "category": "requirement",
+      "file": "src/style.css",
+      "problem": "At 390px, the dock has only 342px of inner width, including three 8px gaps and two 44px icon buttons. The remaining space cannot accommodate both labeled buttons with their padding and nonwrapping text. Flex shrinking compresses the buttons while their labels overflow, compromising readable, unobscured controls required by criterion 5.",
+      "description": "At 390px, the dock has only 342px of inner width, including three 8px gaps and two 44px icon buttons. The remaining space cannot accommodate both labeled buttons with their padding and nonwrapping text. Flex shrinking compresses the buttons while their labels overflow, compromising readable, unobscured controls required by criterion 5.",
+      "required_change": "Use a mobile grid or wrapping layout that gives both labeled buttons sufficient width. Verify all button and label bounds, overlap, and focus outlines at 390×844.",
+      "suggested_fix": "Use a mobile grid or wrapping layout that gives both labeled buttons sufficient width. Verify all button and label bounds, overlap, and focus outlines at 390×844."
+    },
+    {
+      "severity": "high",
+      "category": "test",
+      "file": "scripts/verify-browser.js",
+      "problem": "The script can report full acceptance without testing the required behavior. Mobile success checks only canvas width and a stats string; network monitoring starts after navigation and ignores Network.loadingFailed; keyboard checks never focus the launch button. The planned 60-second run, sustained capacity checks, and complete drain after disabling auto-fire are absent. buildResult is hardcoded to SUCCESS without running or checking a build.",
+      "description": "The script can report full acceptance without testing the required behavior. Mobile success checks only canvas width and a stats string; network monitoring starts after navigation and ignores Network.loadingFailed; keyboard checks never focus the launch button. The planned 60-second run, sustained capacity checks, and complete drain after disabling auto-fire are absent. buildResult is hardcoded to SUCCESS without running or checking a build.",
+      "required_change": "Record an actual successful build, enable monitoring before navigation, capture loading failures, assert control visibility and non-overlap, test focused-button Enter/Space and actual touch input, and perform the sustained run and drain checks. Report only verified results and explicitly identify environmental limitations.",
+      "suggested_fix": "Record an actual successful build, enable monitoring before navigation, capture loading failures, assert control visibility and non-overlap, test focused-button Enter/Space and actual touch input, and perform the sustained run and drain checks. Report only verified results and explicitly identify environmental limitations."
+    },
+    {
+      "severity": "medium",
+      "category": "logic",
+      "file": "scripts/verify-browser.js",
+      "problem": "Port 4173 is hardcoded. Any existing HTTP 200 response is assumed to be this production app; an occupied port returning another status causes a bind failure instead of selecting another port. This violates the explicitly planned occupied-port handling and can verify the wrong server.",
+      "description": "Port 4173 is hardcoded. Any existing HTTP 200 response is assumed to be this production app; an occupied port returning another status causes a bind failure instead of selecting another port. This violates the explicitly planned occupied-port handling and can verify the wrong server.",
+      "required_change": "Start a dedicated server for the current dist on an available loopback port, use its actual address throughout verification, and handle listen errors explicitly.",
+      "suggested_fix": "Start a dedicated server for the current dist on an available loopback port, use its actual address throughout verification, and handle listen errors explicitly."
+    }
+  ],
+  "reviewer": "codex-fallback",
+  "reviewerModel": "gpt-6-astra"
+}

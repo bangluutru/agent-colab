@@ -1,0 +1,69 @@
+{
+  "objective": "Build a minimal React calculator with four arithmetic operations, a responsive basic interface, unit tests, and a successful production build.",
+  "assumptions": [
+    "The calculator accepts two numeric operands and one selected operation, then calculates on form submission.",
+    "Use the existing project tooling when available; otherwise use React with Vite and Vitest.",
+    "Standard JavaScript number precision is sufficient; expression parsing, calculation history, and advanced functions are out of scope."
+  ],
+  "requirements": [
+    "Support addition, subtraction, multiplication, and division.",
+    "For division by zero, display exactly \"Cannot divide by zero\".",
+    "Accept positive numbers, negative numbers, zero, and decimals.",
+    "Provide a basic responsive UI with labeled operand inputs, an operation selector, a Calculate button, and a result or error region.",
+    "Include automated unit tests for arithmetic logic and essential UI behavior.",
+    "Ensure npm run build succeeds."
+  ],
+  "architecture": [
+    "src/calculator.js: pure calculate function accepting two finite numbers and an operation, returning either a numeric result or an error.",
+    "src/App.jsx: controlled operand and operation inputs, submission validation, and result or error rendering.",
+    "src/App.css: minimal responsive layout with bounded width, flexible controls, and visible focus states.",
+    "src/calculator.test.js: unit tests for arithmetic and exceptional outcomes.",
+    "src/App.test.jsx: component tests using React Testing Library and a DOM test environment.",
+    "package.json and existing configuration: retain compatible tooling or minimally configure Vite, Vitest, React Testing Library, and jsdom; expose test and build scripts. Adapt file extensions and paths to existing project conventions."
+  ],
+  "implementation_steps": [
+    "Inspect the project instructions, package.json, source files, and test configuration. Reuse existing conventions and avoid unrelated changes.",
+    "If no React application exists, create the minimal Vite React entry point and application structure. Configure npm run test as a noninteractive test run and npm run build as the production build.",
+    "Implement the pure arithmetic function with explicit operation dispatch. Check a zero divisor before performing division and return the exact required error. Reject unsupported operations and non-finite results.",
+    "Implement a semantic calculator form with two numeric inputs using step=\"any\", an operation selector defaulting to addition, and a submit button. Keep input values as strings so empty values remain distinguishable from zero.",
+    "On submission, reject empty or non-finite operands before calculation. Render either the result or a concise validation error, never both. Clear previous output when either operand or the selected operation changes.",
+    "Add minimal responsive styling: a centered container, full-width usable controls on small screens, no fixed minimum width that causes overflow, and an accessible live output region.",
+    "Write arithmetic and component tests covering required operations, exact division-by-zero wording, validation, and output transitions.",
+    "Run the unit suite and production build, resolve failures, and manually verify keyboard use and layout at mobile and desktop widths."
+  ],
+  "edge_cases": [
+    "Dividing any number, including zero, by 0 or -0 must display exactly \"Cannot divide by zero\".",
+    "Blank operands must not be implicitly converted to zero.",
+    "Negative operands and decimal operands must calculate correctly.",
+    "A result of zero must remain visible rather than being hidden by a truthiness check.",
+    "Invalid or non-finite operands must produce a validation error without invoking arithmetic.",
+    "Overflow producing a non-finite result must display a concise error instead of Infinity or NaN.",
+    "JavaScript floating-point rounding artifacts are accepted; decimal arithmetic tests should use approximate comparisons.",
+    "Changing inputs after a result or error must remove stale output, and a subsequent valid calculation must succeed."
+  ],
+  "acceptance_criteria": [
+    "Submitting 7 + 3 displays 10; 7 - 3 displays 4; 7 × 3 displays 21; and 7 ÷ 2 displays 3.5.",
+    "Division by zero displays exactly \"Cannot divide by zero\" in the output region, without a prefix or additional punctuation.",
+    "Negative numbers, decimals, and zero results are supported.",
+    "Submitting incomplete or invalid operands produces a visible validation error and no numeric result.",
+    "All inputs have accessible labels, controls are keyboard operable, and Enter submits the form.",
+    "At viewport widths of 320px, 768px, and 1280px, controls remain usable and the page has no horizontal overflow.",
+    "npm run test completes successfully and exits without watch mode.",
+    "npm run build exits successfully and generates the configured production output."
+  ],
+  "verification_plan": [
+    "Use table-driven arithmetic unit tests for all four operations, including negative operands, decimals, and zero results.",
+    "Assert exact error equality for division by 0 and -0, including 0 divided by 0.",
+    "Test unsupported operation handling and non-finite arithmetic results.",
+    "Use component tests to submit each operation and verify the rendered output.",
+    "Test blank-input validation, exact division-by-zero text, clearing stale output after edits, and successful recovery from an error.",
+    "Verify accessible labels and keyboard submission through component tests.",
+    "Run npm run test and npm run build from the project root and confirm both exit with code zero.",
+    "Inspect the application at 320px, 768px, and 1280px widths and check keyboard navigation, focus visibility, wrapping, and horizontal overflow."
+  ],
+  "risks": [
+    "Existing dependency versions or test tooling may require configuration adjustments; reuse compatible project tooling before adding dependencies.",
+    "JavaScript floating-point arithmetic can display rounding artifacts; arbitrary-precision arithmetic is outside scope.",
+    "Native numeric input validation varies by browser; retain application-level validation and manually verify basic input behavior."
+  ]
+}

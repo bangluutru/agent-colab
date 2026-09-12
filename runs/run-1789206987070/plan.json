@@ -1,0 +1,84 @@
+{
+  "objective": "Build a simple responsive React Todo app that supports adding, deleting, and completing tasks, persists tasks in localStorage, includes unit tests, and builds successfully with npm run build.",
+  "assumptions": [
+    "Inspect the existing project before choosing tooling; preserve compatible dependencies and conventions.",
+    "If no application exists, use React with Vite and JavaScript.",
+    "Tasks contain a stable unique id, task text, and a completed boolean.",
+    "Completion can be toggled on and off; duplicate task text is allowed.",
+    "No backend, authentication, editing, filtering, or cross-tab synchronization is required."
+  ],
+  "requirements": [
+    "Render a task-entry form and a list of existing tasks.",
+    "Add a task through form submission, supporting both the Add button and Enter key.",
+    "Trim task text and reject empty or whitespace-only submissions.",
+    "Delete an individual task using its id.",
+    "Toggle an individual task's completed state and visually distinguish completed tasks.",
+    "Load saved tasks on startup and persist every successful add, delete, or completion change to localStorage.",
+    "Keep the application usable if stored data is malformed or localStorage is unavailable.",
+    "Provide a basic responsive layout with labeled controls, keyboard accessibility, visible focus states, and readable task text.",
+    "Include automated unit and component tests for task behavior and persistence.",
+    "Provide working npm test and npm run build scripts."
+  ],
+  "architecture": [
+    "Use the existing React toolchain if suitable; otherwise initialize a minimal Vite React application.",
+    "src/App.jsx: own task state, initialize it lazily from storage, implement task actions with functional state updates, and compose the interface.",
+    "src/components/TaskForm.jsx: manage draft text, validate submissions, call the add callback, and clear the input after a successful addition.",
+    "src/components/TaskList.jsx: render the empty state or semantic task list with completion checkboxes and delete buttons.",
+    "src/storage.js: define one versioned storage key and guarded load/save functions; validate stored task records.",
+    "src/styles.css: provide a centered fluid layout, wrapping task text, responsive form controls, completion styling, and focus styles.",
+    "src/storage.test.js and src/App.test.jsx: cover storage utilities and user-visible task behavior using Vitest, React Testing Library, user-event, and jsdom, or equivalent existing tooling.",
+    "Keep state local to React; do not add routing, a global state library, or a backend."
+  ],
+  "implementation_steps": [
+    "Inspect package.json, source files, repository instructions, and existing tests; identify the smallest compatible changes needed.",
+    "Configure React entry points and test tooling only where absent; ensure npm test runs once and npm run build creates a production bundle.",
+    "Define the task model and storage key. Implement guarded parsing and validation: accept only arrays of records with unique nonempty string ids, nonempty string text, and boolean completed values; discard invalid records and duplicate ids.",
+    "Implement lazy state initialization from storage so saved tasks are loaded before persistence runs. Treat missing, malformed, or non-array data as an empty list.",
+    "Implement add, delete, and completion actions using stable ids and immutable functional updates. Generate ids with a browser-supported unique-id mechanism.",
+    "Implement the accessible task form, semantic task list, completion checkboxes, task-specific delete labels, and empty-state message.",
+    "Persist task state changes through the storage utility. Catch write failures and display a concise nonblocking message that changes may not survive a reload.",
+    "Add minimal responsive styles, including safe wrapping for long task text and controls that remain usable on narrow screens.",
+    "Write isolated storage unit tests and component tests covering the specified behavior and failure cases.",
+    "Run the complete test suite and npm run build, resolve failures, and manually check the production preview on mobile and desktop widths."
+  ],
+  "edge_cases": [
+    "Empty or whitespace-only input does not create a task or write a new task record.",
+    "Duplicate task text remains independently completable and deletable because actions use ids.",
+    "Long text and unbroken strings wrap without horizontal page overflow.",
+    "Deleting the final task restores the empty state and persists an empty array.",
+    "Missing storage, invalid JSON, unexpected top-level types, invalid records, and duplicate stored ids are handled without crashing.",
+    "Storage read or write exceptions leave in-memory task actions usable; write failures produce a nonblocking persistence warning.",
+    "Rapid consecutive actions do not lose updates through stale state.",
+    "React development Strict Mode does not overwrite saved tasks with an initial empty state.",
+    "Task text containing HTML is rendered as plain text."
+  ],
+  "acceptance_criteria": [
+    "A user can add a trimmed nonempty task with either Enter or the Add button, and the input clears afterward.",
+    "A user can complete and uncomplete a task, with the checkbox state and visual styling reflecting its status.",
+    "Deleting a task removes only the selected task, including when multiple tasks have identical text.",
+    "After reloading, task text, order, deletions, and completed states match the last successfully persisted state.",
+    "Invalid stored data and storage exceptions do not crash the application.",
+    "The interface has no horizontal overflow at 320px, 768px, and 1280px viewport widths, including with long task text.",
+    "All primary actions work with the keyboard and have accessible names.",
+    "Automated tests cover task actions, validation, persistence restoration, persistence updates, and storage failures.",
+    "npm test exits successfully without entering watch mode.",
+    "npm run build exits successfully and the production preview renders the app."
+  ],
+  "verification_plan": [
+    "Unit-test loading valid tasks, missing data, malformed JSON, non-array data, invalid records, duplicate ids, and storage read exceptions.",
+    "Unit-test serialization of task arrays, including an empty array, and graceful handling of storage write exceptions.",
+    "Component-test adding tasks through both submission methods, trimming text, rejecting blank input, and clearing the input after success.",
+    "Component-test completion toggling, deleting individual tasks with duplicate text, and displaying the empty state after the final deletion.",
+    "Prepopulate localStorage before rendering and verify initial restoration is not overwritten; perform actions, unmount, and remount to verify persisted state.",
+    "Mock storage write failure and verify that task actions still work and a persistence warning appears.",
+    "Reset localStorage and restore mocks between tests; query controls by accessible role and name rather than implementation details.",
+    "Run npm test and npm run build and record their results.",
+    "Inspect the production preview at the specified viewport widths; verify long-text wrapping, keyboard navigation, focus visibility, and real-browser reload persistence."
+  ],
+  "risks": [
+    "The existing project structure is unknown; inspect it before introducing or replacing build and test tooling.",
+    "localStorage can be blocked, full, or cleared by the browser, so persistence cannot be guaranteed when storage fails.",
+    "Multiple open tabs can overwrite each other's saved state; cross-tab synchronization is outside the requested scope.",
+    "DOM-based tests do not validate actual responsive layout, so browser verification remains necessary."
+  ]
+}

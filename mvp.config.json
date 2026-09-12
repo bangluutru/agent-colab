@@ -1,0 +1,164 @@
+{
+  "defaultModels": {
+    "codex": "gpt-6-astra",
+    "claude": "opus",
+    "gemini": "gemini-3.8-flash"
+  },
+  "availableModels": {
+    "codex": [
+      {
+        "id": "gpt-6-astra",
+        "name": "GPT-6 Astra",
+        "group": "Default (Recommended)",
+        "badge": "Default",
+        "description": "Top-tier coding, system design & complex architectures"
+      },
+      {
+        "id": "gpt-5.6-sol",
+        "name": "GPT-5.6 Sol",
+        "group": "Default (Recommended)",
+        "badge": "Fast",
+        "description": "High speed, deep reasoning & daily full-stack development"
+      },
+      {
+        "id": "gpt-5.6-terra",
+        "name": "GPT-5.6 Terra",
+        "group": "Default (Recommended)",
+        "badge": "Robust",
+        "description": "Robust refactoring, large context & repository maintenance"
+      },
+      {
+        "id": "gpt-5.6-luna",
+        "name": "GPT-5.6 Luna",
+        "group": "Default (Recommended)",
+        "badge": "Ultra-fast",
+        "description": "Ultra-fast response, quick fixes, unit tests & scripts"
+      },
+      {
+        "id": "gpt-5.5",
+        "name": "GPT-5.5",
+        "group": "Default (Recommended)",
+        "badge": "Stable",
+        "description": "Proven reasoning model for code review & stable workflows"
+      }
+    ],
+    "claude": [
+      {
+        "id": "fable-5.1",
+        "name": "Fable 5.1",
+        "group": "Primary Models",
+        "badge": "Requires credits",
+        "creditRequired": true,
+        "description": "Mythos-class flagship tier for highest capability"
+      },
+      {
+        "id": "opus",
+        "name": "Opus 5",
+        "group": "Primary Models",
+        "badge": "Default",
+        "description": "Top-tier deep reasoning & exhaustive adversarial inspection"
+      },
+      {
+        "id": "sonnet",
+        "name": "Sonnet 5",
+        "group": "Primary Models",
+        "badge": "Balanced",
+        "description": "Balanced adversarial code reviewer & flaw hunter"
+      },
+      {
+        "id": "haiku",
+        "name": "Haiku 4.5",
+        "group": "Primary Models",
+        "badge": "Fast",
+        "description": "High-velocity quick code scanner & sanity checker"
+      },
+      {
+        "id": "claude-fable-5",
+        "name": "Fable 5",
+        "group": "More models",
+        "badge": "Requires credits",
+        "creditRequired": true,
+        "description": "First-generation Mythos-class reasoning engine"
+      },
+      {
+        "id": "claude-opus-4-8",
+        "name": "Opus 4.8",
+        "group": "More models",
+        "badge": "Deep Inspection",
+        "description": "Advanced deep-inspection reviewer"
+      },
+      {
+        "id": "claude-opus-4-7",
+        "name": "Opus 4.7",
+        "group": "More models",
+        "badge": "Deep Inspection",
+        "description": "Robust deep-inspection reviewer"
+      },
+      {
+        "id": "claude-opus-4-6",
+        "name": "Opus 4.6",
+        "group": "More models",
+        "badge": "High Precision",
+        "description": "High-precision structural reviewer"
+      },
+      {
+        "id": "claude-sonnet-4-6",
+        "name": "Sonnet 4.6",
+        "group": "More models",
+        "badge": "Accurate Auditor",
+        "description": "Accurate adversarial code auditor"
+      }
+    ],
+    "gemini": [
+      {
+        "id": "gemini-3.8-flash",
+        "name": "Gemini 3.8 Flash",
+        "group": "Gemini Series",
+        "badge": "High · Fast · Default",
+        "description": "Antigravity native host, orchestrator, and swift code executor"
+      },
+      {
+        "id": "gemini-3.7-flash",
+        "name": "Gemini 3.7 Flash",
+        "group": "Gemini Series",
+        "badge": "Medium · Fast",
+        "description": "Balanced speed & reasoning executor"
+      },
+      {
+        "id": "gemini-3.6-flash",
+        "name": "Gemini 3.6 Flash",
+        "group": "Gemini Series",
+        "badge": "Medium · Fast",
+        "description": "High-velocity implementation engine"
+      },
+      {
+        "id": "gemini-3.1-pro",
+        "name": "Gemini 3.1 Pro",
+        "group": "Gemini Series",
+        "badge": "Low",
+        "description": "Lightweight execution model"
+      },
+      {
+        "id": "claude-sonnet-4-6-thinking",
+        "name": "Claude Sonnet 4.6 (Thinking)",
+        "group": "Antigravity IDE Models",
+        "badge": "Thinking",
+        "description": "IDE-hosted Claude reasoning model"
+      },
+      {
+        "id": "claude-opus-4-6-thinking",
+        "name": "Claude Opus 4.6 (Thinking)",
+        "group": "Antigravity IDE Models",
+        "badge": "Thinking",
+        "description": "IDE-hosted Claude deep reasoning model"
+      },
+      {
+        "id": "gpt-oss-120b",
+        "name": "GPT-OSS 120B",
+        "group": "Antigravity IDE Models",
+        "badge": "Medium",
+        "description": "Open-weight high-parameter model hosted in IDE"
+      }
+    ]
+  }
+}

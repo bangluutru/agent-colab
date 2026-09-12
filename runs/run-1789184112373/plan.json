@@ -1,0 +1,89 @@
+{
+  "objective": "Xây dựng chương trình mô phỏng bắn pháo hoa cho phép người dùng chọn và hiển thị nhiều hình dạng pháo hoa khác nhau.",
+  "assumptions": [
+    "Ứng dụng là chương trình tương tác có giao diện trực quan.",
+    "Có thể triển khai bằng HTML, CSS và JavaScript chạy trên trình duyệt.",
+    "Các hình dạng được tạo bằng hiệu ứng hạt 2D trên canvas.",
+    "Người dùng có thể chọn hình dạng trước khi kích hoạt pháo hoa."
+  ],
+  "requirements": [
+    "Hiển thị vùng canvas toàn màn hình hoặc chiếm phần lớn giao diện.",
+    "Cho phép chọn nhiều hình dạng pháo hoa, tối thiểu gồm hình tròn, trái tim, ngôi sao và vòng xoắn.",
+    "Cho phép kích hoạt pháo hoa bằng nút bấm và/hoặc thao tác nhấp vào canvas.",
+    "Mỗi lần bắn phải tạo hiệu ứng tên lửa bay lên rồi phát nổ thành hình dạng đã chọn.",
+    "Các hạt pháo hoa phải có màu sắc, tốc độ, kích thước và thời gian sống đa dạng.",
+    "Cho phép nhiều vụ nổ xuất hiện đồng thời.",
+    "Có hiệu ứng trọng lực, giảm tốc và mờ dần tự nhiên.",
+    "Có giao diện điều khiển để chọn hình dạng và tối thiểu một tùy chọn màu sắc hoặc chế độ tự động.",
+    "Hiển thị tốt trên màn hình máy tính và thiết bị di động.",
+    "Không để hiệu ứng chạy vô hạn gây suy giảm hiệu năng."
+  ],
+  "architecture": [
+    "CanvasRenderer: quản lý canvas, kích thước hiển thị, vòng lặp animation và thao tác vẽ.",
+    "FireworkController: quản lý việc tạo tên lửa, kích hoạt vụ nổ và danh sách pháo hoa đang hoạt động.",
+    "Particle: biểu diễn từng hạt với vị trí, vận tốc, màu sắc, kích thước, độ trong suốt và thời gian sống.",
+    "ShapeGenerator: chuyển hình dạng được chọn thành tập hợp điểm đích cho các hạt.",
+    "Shape presets: định nghĩa các công thức tạo điểm cho hình tròn, trái tim, ngôi sao và vòng xoắn; thiết kế mở để bổ sung hình dạng mới.",
+    "ControlPanel: cung cấp bộ chọn hình dạng, màu sắc, số lượng hạt, chế độ tự động và nút kích hoạt.",
+    "Animation loop: cập nhật trạng thái theo delta time, loại bỏ hạt hết vòng đời và render lại mỗi frame.",
+    "File structure: index.html chứa bố cục; styles.css chứa giao diện đáp ứng; app.js chứa điều phối ứng dụng; modules/particle.js, modules/shapes.js, modules/firework-controller.js và modules/renderer.js chứa logic tách biệt."
+  ],
+  "implementation_steps": [
+    "Khảo sát cấu trúc dự án hiện tại và xác định điểm khởi chạy, công nghệ giao diện तथा cơ chế kiểm thử đang dùng.",
+    "Tạo bố cục gồm canvas và bảng điều khiển chọn hình dạng, màu sắc, mật độ hạt, chế độ tự động và nút bắn.",
+    "Khởi tạo canvas theo kích thước vùng hiển thị, xử lý resize và hỗ trợ device pixel ratio để hình ảnh sắc nét.",
+    "Định nghĩa mô hình Particle và logic cập nhật vị trí, vận tốc, trọng lực, độ trong suốt và thời gian sống.",
+    "Triển khai tên lửa bay lên trước khi phát nổ; khi đạt độ cao hoặc điều kiện ngẫu nhiên thì chuyển thành cụm hạt.",
+    "Triển khai ShapeGenerator với hệ tọa độ chuẩn hóa để tạo tập điểm cho từng hình dạng được chọn.",
+    "Thêm cơ chế biến đổi điểm đích thành vận tốc hạt, kèm sai số ngẫu nhiên nhỏ để hiệu ứng tự nhiên nhưng vẫn giữ đúng hình dạng.",
+    "Xây dựng FireworkController để quản lý nhiều tên lửa, nhiều vụ nổ đồng thời, giới hạn số lượng hạt và dọn dẹp đối tượng hết vòng đời.",
+    "Thêm sự kiện nhấp/chạm trên canvas để bắn tại vị trí tương ứng và liên kết các điều khiển với trạng thái mô phỏng.",
+    "Thêm chế độ tự động với khoảng thời gian bắn có thể kiểm soát và cơ chế dừng khi người dùng tắt chế độ.",
+    "Tối ưu render bằng cách dùng requestAnimationFrame, cập nhật theo delta time và tránh tạo lại cấu trúc DOM trong vòng lặp.",
+    "Bổ sung kiểm thử cho ShapeGenerator, vòng đời Particle, xử lý lựa chọn hình dạng và giới hạn số lượng đối tượng.",
+    "Kiểm tra thủ công trên các kích thước màn hình, trình duyệt phổ biến và thao tác chuột/chạm."
+  ],
+  "edge_cases": [
+    "Người dùng thay đổi hình dạng trong khi pháo hoa đang bay; vụ mới dùng lựa chọn mới, vụ đang chạy giữ hình dạng ban đầu.",
+    "Người dùng nhấp liên tục tạo quá nhiều pháo hoa; cần giới hạn số tên lửa và hạt tối đa.",
+    "Canvas có kích thước bằng 0 hoặc bị thay đổi khi xoay màn hình; cần bỏ qua frame lỗi và khởi tạo lại kích thước an toàn.",
+    "Hình dạng có quá ít hoặc quá nhiều điểm; cần áp dụng giới hạn tối thiểu và tối đa cho số hạt.",
+    "Thiết bị yếu hoặc trình duyệt không hỗ trợ canvas; cần hiển thị thông báo phù hợp hoặc giao diện dự phòng.",
+    "Người dùng giảm chuyển động trong cài đặt hệ điều hành; nên giảm mật độ và thời lượng hiệu ứng nếu có thể.",
+    "Màu được chọn không hợp lệ hoặc không tồn tại; sử dụng màu mặc định.",
+    "Chuyển tab hoặc đưa ứng dụng xuống nền; tạm dừng hoặc giới hạn cập nhật để tránh tiêu tốn CPU.",
+    "Chạm trên thiết bị di động gây cuộn trang; cần ngăn hành vi mặc định trong vùng canvas.",
+    "Nhiều hình dạng có điểm trùng nhau hoặc tự giao nhau; vẫn phải render ổn định mà không gây lỗi."
+  ],
+  "acceptance_criteria": [
+    "Người dùng có thể chọn ít nhất bốn hình dạng khác nhau và xác nhận hình dạng đã chọn bằng giao diện.",
+    "Khi bắn, tên lửa bay lên và phát nổ thành hình dạng tương ứng với lựa chọn hiện tại.",
+    "Có thể hiển thị đồng thời nhiều vụ nổ mà animation vẫn hoạt động ổn định.",
+    "Các hạt có chuyển động tự nhiên, chịu trọng lực, mờ dần và tự biến mất sau thời gian sống.",
+    "Nhấp hoặc chạm vào canvas tạo được pháo hoa tại vị trí hợp lệ.",
+    "Chế độ tự động có thể bật/tắt mà không làm treo hoặc nhân bản vòng lặp animation.",
+    "Ứng dụng không tạo DOM node mới cho từng hạt trong mỗi frame.",
+    "Số lượng pháo hoa và hạt bị giới hạn để tránh sử dụng bộ nhớ không kiểm soát.",
+    "Giao diện sử dụng được trên màn hình rộng và màn hình di động nhỏ.",
+    "Các kiểm thử tự động cho công thức hình dạng, cập nhật hạt và điều khiển trạng thái đều đạt."
+  ],
+  "verification_plan": [
+    "Chạy lint, type check hoặc kiểm tra cú pháp theo công cụ có sẵn trong dự án.",
+    "Chạy unit test cho từng ShapeGenerator và xác nhận điểm sinh ra nằm trong phạm vi mong muốn.",
+    "Kiểm thử Particle với delta time khác nhau, kiểm tra trọng lực, độ trong suốt và điều kiện hết vòng đời.",
+    "Kiểm thử FireworkController khi bắn liên tiếp, bắn đồng thời và đạt giới hạn số lượng.",
+    "Kiểm thử giao diện bằng cách chọn lần lượt từng hình dạng, màu sắc và chế độ tự động.",
+    "Kiểm thử thao tác chuột và cảm ứng trên các kích thước khoảng 320px, 390px, tablet và desktop.",
+    "Dùng DevTools theo dõi FPS, bộ nhớ và số lượng object khi chạy liên tục trong vài phút.",
+    "Kiểm tra khi resize, xoay màn hình, chuyển tab và quay lại ứng dụng.",
+    "Xác nhận không có lỗi trong console và không có vòng lặp animation hoặc bộ hẹn giờ bị nhân bản."
+  ],
+  "risks": [
+    "Canvas có thể giảm FPS khi số lượng hạt lớn; cần giới hạn hạt, dùng delta time và tối ưu thao tác render.",
+    "Công thức tạo hình dạng có thể làm hình bị méo ở các tỷ lệ canvas khác nhau; cần chuẩn hóa theo kích thước vùng nổ.",
+    "Hiệu ứng quá sáng hoặc quá nhiều màu có thể làm giảm khả năng quan sát; nên giới hạn alpha và độ sáng.",
+    "Logic tự động và thao tác người dùng có thể tạo các vụ nổ vượt giới hạn; cần một bộ điều phối duy nhất và ngưỡng bảo vệ.",
+    "Khác biệt giữa sự kiện chuột và cảm ứng có thể gây bắn hai lần; cần chuẩn hóa sự kiện pointer.",
+    "Thiếu cơ chế giảm chuyển động có thể gây khó chịu cho một số người dùng; nên cung cấp tùy chọn tắt hoặc giảm hiệu ứng."
+  ]
+}

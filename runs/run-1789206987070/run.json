@@ -1,0 +1,15 @@
+{
+  "id": "run-1789206987070",
+  "status": "BLOCKED",
+  "blockedReason": "Claude Code CLI authentication required: Not logged in · Please run 'claude login' in terminal",
+  "blockedPhase": "REVIEWING",
+  "createdAt": "2026-09-12T09:56:27.239Z",
+  "userRequest": "Build a simple Todo web app.\nRequirements:\n- React\n- add task\n- delete task\n- mark completed\n- localStorage persistence\n- basic responsive UI\n- unit tests\n- npm run build must succeed",
+  "workspacePath": "/Users/tranhaibang/.gemini/antigravity-ide/scratch/agent-collaboration-mvp/workspaces/run-1789206987070/project",
+  "models": {
+    "codexModel": "gpt-6-astra",
+    "claudeModel": "opus",
+    "geminiModel": "gemini-3.8-flash",
+    "reasoningEffort": "low"
+  }
+}

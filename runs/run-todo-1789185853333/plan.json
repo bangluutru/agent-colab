@@ -1,0 +1,77 @@
+{
+  "objective": "Build a simple responsive React Todo web app with task creation, deletion, completion toggling, localStorage persistence, unit tests, and a successful production build.",
+  "assumptions": [
+    "Inspect the existing repository before implementation; reuse its package manager, React tooling, language, and test conventions.",
+    "If no application exists, initialize a minimal React app with Vite and use Vitest, React Testing Library, and jsdom for tests.",
+    "Tasks contain an id, text, and completed boolean.",
+    "Completion can be toggled in either direction; task editing, filtering, accounts, and backend services are outside scope."
+  ],
+  "requirements": [
+    "Implement the interface using React.",
+    "Add tasks through a labeled text input and submit button; support Enter submission.",
+    "Trim task text and reject empty or whitespace-only submissions.",
+    "Delete individual tasks.",
+    "Toggle individual tasks between active and completed.",
+    "Persist task additions, deletions, and completion changes in localStorage and restore them on reload.",
+    "Provide a basic responsive, keyboard-accessible interface with distinguishable completed tasks.",
+    "Include automated unit tests for task behavior and persistence.",
+    "Ensure npm run build completes successfully."
+  ],
+  "architecture": [
+    "App owns task state, coordinates task operations, and renders the form, empty state, and task list.",
+    "TaskForm owns the input value and invokes an add callback for valid submissions.",
+    "TaskItem renders task text, a labeled completion checkbox, and an accessible delete button.",
+    "A small storage module encapsulates the storage key, JSON serialization, validation, and exception handling.",
+    "Use an illustrative structure of src/App.jsx, src/components/TaskForm.jsx, src/components/TaskItem.jsx, src/storage.js, src/styles.css, and colocated test files; adapt extensions and locations to repository conventions.",
+    "Initialize task state lazily from storage, update state immutably, and persist the initialized state whenever tasks change."
+  ],
+  "implementation_steps": [
+    "Inspect package.json, source files, repository instructions, and existing tests. Identify reusable tooling and establish the current build and test commands.",
+    "Set up only missing React and test infrastructure. Provide build and noninteractive test scripts in package.json.",
+    "Implement storage loading and saving under a namespaced key such as todo-app.tasks.v1. Require an array of records with unique nonempty string ids, nonblank string text, and boolean completed values. Return an empty list for missing, malformed, or invalid stored data; catch storage access failures.",
+    "Implement App state with lazy storage initialization. Generate a stable unique id when creating each task, append new tasks as incomplete, delete by id, and toggle completion by id using functional state updates.",
+    "Implement TaskForm with a visible label, submission handling, whitespace validation, and input clearing after successful addition.",
+    "Implement the semantic task list and TaskItem controls, including checkbox state, completed styling, accessible delete labels, and a friendly empty state.",
+    "Add minimal responsive CSS with a centered maximum-width container, flexible controls, wrapping long task text, visible focus states, and usable mobile spacing.",
+    "Write storage and component tests using isolated localStorage state and realistic user interactions.",
+    "Run the complete test suite and npm run build, resolve failures, and manually verify responsive behavior and persistence in the running app."
+  ],
+  "edge_cases": [
+    "Empty or whitespace-only submissions create no task.",
+    "Duplicate task text is allowed; unique ids ensure independent deletion and completion.",
+    "Long task text wraps without horizontal overflow or obscuring controls.",
+    "Deleting the final task displays the empty state and persists an empty array.",
+    "Missing, malformed, or structurally invalid stored data does not crash the app.",
+    "Blocked localStorage or quota failures leave the app usable in memory, although persistence is unavailable.",
+    "Existing saved tasks are loaded before persistence runs, preventing initial empty state from overwriting them.",
+    "Task text containing HTML-like content is displayed as ordinary text through React rendering."
+  ],
+  "acceptance_criteria": [
+    "Submitting valid text by button or Enter adds exactly one incomplete task, trims its text, and clears the input.",
+    "Invalid empty submissions leave the task list unchanged.",
+    "Deleting a task removes only the selected task.",
+    "Toggling a checkbox updates only the selected task and allows it to return to active status.",
+    "Reloading restores task text, ordering, and completion states after additions, deletions, and toggles.",
+    "Storage failures and invalid saved data produce no uncaught application errors.",
+    "The interface remains usable at 320px mobile width and desktop widths without horizontal overflow.",
+    "Users can add, toggle, and delete tasks using a keyboard, with accessible labels and visible focus indicators.",
+    "Automated tests pass through the configured noninteractive npm test command.",
+    "npm run build exits with code 0 and generates the production output."
+  ],
+  "verification_plan": [
+    "Test storage loading with missing data, a valid task array, malformed JSON, invalid records, and duplicate ids.",
+    "Test storage serialization and ensure read or write exceptions are handled without crashing.",
+    "Test initial empty state, button submission, Enter submission, trimming, input clearing, and rejection of blank text.",
+    "Test independent completion toggling and deletion, including tasks with identical text and deletion of the final task.",
+    "Seed localStorage before rendering and verify hydration; perform each mutation and verify the serialized state, then unmount and remount to confirm restoration.",
+    "Clear localStorage and reset mocks between tests to prevent order-dependent results.",
+    "Run npm test in noninteractive mode and npm run build from the project root.",
+    "Manually inspect the running app at 320px, 768px, and desktop widths, including long text, keyboard navigation, and a browser reload after each task operation."
+  ],
+  "risks": [
+    "Existing tooling may differ from the assumed scaffold; preserve working conventions and avoid unnecessary dependency or configuration changes.",
+    "localStorage is browser- and origin-specific and may be unavailable; this implementation provides no cross-device synchronization or persistence guarantee when storage fails.",
+    "Concurrent edits in multiple browser tabs can overwrite saved state; cross-tab synchronization is outside the requested scope.",
+    "jsdom does not validate actual responsive layout, so browser inspection remains necessary alongside unit tests."
+  ]
+}

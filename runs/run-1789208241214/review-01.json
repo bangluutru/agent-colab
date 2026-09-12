@@ -1,0 +1,26 @@
+{
+  "decision": "CHANGES_REQUESTED",
+  "summary": "Storage validation permits duplicate task IDs, breaking targeted completion and deletion. The supplied results report 32 passing tests but contain no successful build output. Independent test/build reruns were blocked by the read-only sandbox.",
+  "issues": [
+    {
+      "severity": "medium",
+      "category": "logic",
+      "file": "src/taskStorage.js",
+      "problem": "loadTasks validates individual objects but accepts duplicate IDs. Restoring two tasks with id \"same\" causes either checkbox to toggle both tasks and either Delete button to remove both. This also creates duplicate React keys and checkbox DOM IDs, violating independent task operations.",
+      "description": "loadTasks validates individual objects but accepts duplicate IDs. Restoring two tasks with id \"same\" causes either checkbox to toggle both tasks and either Delete button to remove both. This also creates duplicate React keys and checkbox DOM IDs, violating independent task operations.",
+      "required_change": "Validate uniqueness across the stored array and reject invalid data with an empty array, as planned. Add regression tests using duplicate stored IDs to ensure they cannot reach task state.",
+      "suggested_fix": "Validate uniqueness across the stored array and reject invalid data with an empty array, as planned. Add regression tests using duplicate stored IDs to ensure they cannot reach task state."
+    },
+    {
+      "severity": "medium",
+      "category": "test",
+      "file": "src/App.test.jsx",
+      "problem": "The long-text test only asserts that text exists in jsdom; it cannot detect horizontal overflow. No browser verification is supplied for 320px/desktop layouts or persistence across reload, and no test performs the planned mutation-and-remount persistence check.",
+      "description": "The long-text test only asserts that text exists in jsdom; it cannot detect horizontal overflow. No browser verification is supplied for 320px/desktop layouts or persistence across reload, and no test performs the planned mutation-and-remount persistence check.",
+      "required_change": "Add a persistence test that adds, toggles, deletes, and remounts to verify saved order and completion state. Run and document browser checks at 320px and desktop widths with long unbroken text and a real reload, and provide a successful npm run build result.",
+      "suggested_fix": "Add a persistence test that adds, toggles, deletes, and remounts to verify saved order and completion state. Run and document browser checks at 320px and desktop widths with long unbroken text and a real reload, and provide a successful npm run build result."
+    }
+  ],
+  "reviewer": "codex-fallback",
+  "reviewerModel": "gpt-6-astra"
+}

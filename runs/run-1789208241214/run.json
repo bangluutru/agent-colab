@@ -1,0 +1,15 @@
+{
+  "runId": "run-1789208241214",
+  "status": "COMPLETED",
+  "completedAt": "2026-09-12T10:35:19.261Z",
+  "userRequest": "Build a simple Todo web app.\nRequirements:\n- React\n- add task\n- delete task\n- mark completed\n- localStorage persistence\n- basic responsive UI\n- unit tests\n- npm run build must succeed",
+  "workspacePath": "/Users/tranhaibang/.gemini/antigravity-ide/scratch/agent-collaboration-mvp/workspaces/run-1789208241214/project",
+  "models": {
+    "reviewerFallback": true
+  },
+  "reviewRounds": 3,
+  "verification": {
+    "testPass": true,
+    "buildPass": true
+  }
+}
