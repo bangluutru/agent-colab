@@ -73,6 +73,7 @@ const server = http.createServer(async (req, res) => {
 
   // 2. GET /api/status - Live cluster readiness
   if (pathname === '/api/status' && req.method === 'GET') {
+    const refresh = url.searchParams.get('refresh') === 'true';
     const config = loadConfig();
     const probeWorkflow = new WorkflowController({
       userRequest: 'status-probe',
@@ -86,7 +87,7 @@ const server = http.createServer(async (req, res) => {
 
     const [codexStatus, claudeStatus, geminiStatus] = await Promise.all([
       probeWorkflow.getCodexAdapter().getStatus(),
-      probeWorkflow.getClaudeAdapter().getStatus(),
+      probeWorkflow.getClaudeAdapter().getStatus(refresh),
       probeWorkflow.getGeminiAdapter().getStatus(),
     ]);
 
@@ -616,15 +617,18 @@ const server = http.createServer(async (req, res) => {
 
         // Check for already running controller to prevent duplicate processes (Section 18)
         if (activeControllers.size > 0) {
-          const [existingId, existingCtrl] = activeControllers.entries().next().value;
-          const existingState = existingCtrl.getStateMachine().getState();
-          if (!['COMPLETED', 'BLOCKED', 'FAILED', 'CANCELLED'].includes(existingState)) {
-            res.writeHead(409, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-              error: `Run ${existingId} is currently active in stage ${existingState}. Please wait or cancel it before starting another.`,
-              run_id: existingId,
-            }));
-            return;
+          const entry = activeControllers.entries().next().value;
+          if (entry) {
+            const [existingId, existingCtrl] = entry;
+            const existingState = existingCtrl.getStateMachine().getState();
+            if (!['COMPLETED', 'BLOCKED', 'FAILED', 'CANCELLED'].includes(existingState)) {
+              res.writeHead(409, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                error: `Run ${existingId} is currently active in stage ${existingState}. Please wait or cancel it before starting another.`,
+                run_id: existingId,
+              }));
+              return;
+            }
           }
         }
 

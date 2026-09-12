@@ -120,4 +120,5 @@ export interface AgentStatus {
   ready: boolean;
   currentModel: string;
   authStatus: string;
+  detectionDetails?: any;
 }

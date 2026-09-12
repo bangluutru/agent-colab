@@ -10,6 +10,7 @@
     "ui": "tsx server.ts",
     "test": "tsx tests/state-machine.test.ts && tsx tests/schema.test.ts && tsx tests/fallback-review.test.ts",
     "gate-0": "tsx scripts/gate-0.ts",
+    "diagnose:claude": "tsx scripts/diagnose-claude.ts",
     "e2e": "tsx scripts/test-autonomous-e2e.ts",
     "test:e2e": "tsx scripts/test-autonomous-e2e.ts",
     "test:defect": "tsx scripts/test-controlled-defect.ts",

@@ -135,6 +135,15 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
+.status-indicator.warning {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.status-indicator.offline {
+  background: var(--accent-rose);
+}
+
 .chip-info {
   display: flex;
   flex-direction: column;

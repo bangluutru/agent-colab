@@ -41,7 +41,7 @@
           <span class="status-indicator online"></span>
           <div class="chip-info">
             <span class="agent-role">CLAUDE CODE CLI (Reviewer)</span>
-            <span class="agent-model-name" id="display-claude-model">Opus 5</span>
+            <span class="agent-model-name" id="display-claude-model">Sonnet 5</span>
           </div>
         </div>
 
@@ -100,10 +100,10 @@
             </label>
             <select id="select-claude-model" class="custom-select">
               <optgroup label="Primary Models">
-                <option value="fable-5.1">Fable 5.1 ⓘ (Requires usage credits)</option>
-                <option value="opus" selected>Opus 5 (Deep Exhaustive Reviewer · Default)</option>
-                <option value="sonnet">Sonnet 5 (Balanced Flaw Hunter)</option>
+                <option value="claude-sonnet-5" selected>Sonnet 5 (Balanced Flaw Hunter · Default)</option>
+                <option value="claude-opus-5">Opus 5 (Deep Exhaustive Reviewer)</option>
                 <option value="haiku">Haiku 4.5 (High-Velocity Scanner)</option>
+                <option value="fable-5.1">Fable 5.1 ⓘ (Requires usage credits)</option>
               </optgroup>
               <optgroup label="More models (Extended)">
                 <option value="claude-fable-5">Fable 5 ⓘ (Requires usage credits)</option>
@@ -401,7 +401,7 @@ Requirements:
                 <div class="alert-icon">⚠️</div>
                 <div class="alert-body">
                   <strong id="alert-title">Workflow Blocked</strong>
-                  <p id="alert-message">Authentication expired. Please run claude login in terminal.</p>
+                  <p id="alert-message">Claude Code subscription authentication is unavailable. Run in Terminal: <code>claude auth logout && claude auth login</code></p>
                 </div>
                 <button id="btn-banner-retry" class="btn-primary-action btn-sm">
                   <span>🔄</span> <span>Retry Collaboration</span>

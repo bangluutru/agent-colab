@@ -446,8 +446,8 @@ export class WorkflowController {
         reviewResult = codexReviewResult;
         usedFallback = true;
       } else {
-        if (claudeErrorReason.includes('AUTH_REQUIRED') || claudeErrorReason.includes('Not logged in') || claudeErrorReason.includes('Please run /login')) {
-          throw new Error(`AUTH_REQUIRED: Claude Code not logged in. Please run "claude login" in terminal.`);
+        if (claudeErrorReason.includes('AUTH_REQUIRED') || claudeErrorReason.includes('Not logged in') || claudeErrorReason.includes('Please run /login') || claudeErrorReason.includes('AUTH_SESSION_BROKEN') || claudeErrorReason.includes('AUTH_TOKEN_EXPIRED')) {
+          throw new Error(`Claude Code subscription authentication is unavailable (${claudeErrorReason}). Run in Terminal:\nclaude auth status\nIf necessary:\nclaude auth logout\nclaude update\nclaude auth login\nThen verify:\nclaude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK"`);
         }
         throw new Error(`Claude review failed: ${claudeErrorReason}`);
       }
@@ -846,7 +846,7 @@ export class WorkflowController {
             ...conformance.missing_items.map(m => `Missing: ${m}`),
             ...conformance.deviations.map(d => `Deviation: ${d}`),
           ];
-          await this.runGeminiFix(deviations, conformance.summary, verification.testOutput);
+          await this.runGeminiFix(deviations, conformance.summary || 'Codex non-conformance detected', verification.testOutput);
 
           this.transition('TESTING');
           verification = await this.runProjectVerification();
@@ -925,7 +925,9 @@ export class WorkflowController {
       const isAuthError = (err.message || '').includes('AUTH_REQUIRED') ||
         (err.message || '').includes('Not logged in') ||
         (err.message || '').includes('Please run /login') ||
-        (err.message || '').includes('claude login');
+        (err.message || '').includes('claude login') ||
+        (err.message || '').includes('AUTH_SESSION_BROKEN') ||
+        (err.message || '').includes('AUTH_TOKEN_EXPIRED');
 
       if (isAuthError) {
         try {
@@ -937,7 +939,7 @@ export class WorkflowController {
           reason: 'AUTH_REQUIRED',
           agent: 'claude',
           stage: 'REVIEWING',
-          message: 'Claude Code authentication expired. Please run "claude login" in your terminal, then click Retry.',
+          message: 'Claude Code subscription authentication is unavailable. Run in Terminal: claude auth logout && claude update && claude auth login. Then verify: claude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK", then click Retry.',
           timestamp: new Date().toISOString(),
         };
         fs.writeFileSync(path.join(this.runDir, 'blocked.json'), JSON.stringify(blockedInfo, null, 2), 'utf8');

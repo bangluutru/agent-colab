@@ -97,24 +97,45 @@ async function runGate0() {
     });
   }
 
-  // 5. Claude Code CLI (Reviewer)
+  // 5. Claude Code CLI (Reviewer) - Level 1, 2, and 3 Checks (Section 18)
   try {
     const claudeAdapter = new ClaudeAdapter();
-    const claudeDetect = await claudeAdapter.detect();
-    const isAuthRequired = !claudeDetect.available && claudeDetect.error?.includes('AUTH_REQUIRED');
+    const binary = claudeAdapter.getCanonicalBinary();
+    const verRes = await claudeAdapter.runClaudeProcess(['--version'], { timeoutMs: 5000 });
+    const authRes = await claudeAdapter.runClaudeProcess(['auth', 'status'], { timeoutMs: 5000 });
+    let authData: any = {};
+    try { authData = JSON.parse(authRes.stdout); } catch {}
+
+    const level2Pass = authRes.exitCode === 0 && authData.loggedIn === true;
     results.push({
-      component: 'Claude Code CLI (Reviewer)',
-      command: 'claude auth status',
-      status: claudeDetect.available ? 'PASS' : (isAuthRequired ? 'AUTH_REQUIRED' as any : 'FAIL'),
-      version: claudeDetect.version,
-      details: claudeDetect.available
-        ? 'Authenticated via Claude Pro Subscription (Zero-API-Key)'
-        : (claudeDetect.error || 'Unavailable'),
+      component: 'Claude Auth Metadata (Level 2)',
+      command: `${binary} auth status`,
+      status: level2Pass ? 'PASS' : 'FAIL',
+      version: verRes.stdout || 'N/A',
+      details: level2Pass
+        ? `Method: ${authData.authMethod || 'claude.ai'} · Subscription: ${authData.subscriptionType || 'Pro'}`
+        : (authData.error || 'Not logged in. Run claude auth login in terminal.'),
+    });
+
+    // Level 3: Real Headless Inference Probe
+    const probeRes = await claudeAdapter.runClaudeProcess(
+      ['-p', '--model', 'claude-sonnet-5', 'Reply with exactly: CLAUDE_PROBE_OK'],
+      { timeoutMs: 15000 }
+    );
+    const probePass = probeRes.exitCode === 0 && probeRes.stdout.includes('CLAUDE_PROBE_OK');
+    results.push({
+      component: 'Claude Real Headless Inference (Level 3)',
+      command: `${binary} -p --model claude-sonnet-5 ...`,
+      status: probePass ? 'PASS' : 'FAIL',
+      version: 'claude-sonnet-5',
+      details: probePass
+        ? 'Real headless inference verified (CLAUDE_PROBE_OK received)'
+        : (probeRes.stdout || probeRes.stderr || 'Inference probe failed'),
     });
   } catch (err: any) {
     results.push({
       component: 'Claude Code CLI (Reviewer)',
-      command: 'claude --version',
+      command: 'claude',
       status: 'FAIL',
       details: err.message,
     });

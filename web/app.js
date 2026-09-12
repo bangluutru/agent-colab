@@ -96,11 +96,70 @@ function renderGroupedOptions(modelsList) {
     .join('');
 }
 
+let cachedClusterStatus = null;
+
 function updateChipDisplay(selectEl, chipDisplayId) {
   const selectedOpt = selectEl.options[selectEl.selectedIndex];
   if (selectedOpt) {
     const displayName = selectedOpt.getAttribute('data-name') || selectedOpt.text.split(' (')[0];
-    document.getElementById(chipDisplayId).textContent = displayName;
+    const el = document.getElementById(chipDisplayId);
+    if (el) el.textContent = displayName;
+  }
+}
+
+function updateClusterChipsStatus(statusData) {
+  if (!statusData) return;
+  cachedClusterStatus = statusData;
+
+  const claudeChip = document.getElementById('chip-claude');
+  const claudeIndicator = claudeChip?.querySelector('.status-indicator');
+  const claudeModelDisplay = document.getElementById('display-claude-model');
+  const claudeSelect = document.getElementById('select-claude-model');
+  const selectedModelName = claudeSelect?.options[claudeSelect?.selectedIndex]?.getAttribute('data-name') || 'Sonnet 5';
+
+  if (statusData.claude) {
+    if (statusData.claude.ready) {
+      if (claudeIndicator) {
+        claudeIndicator.className = 'status-indicator online pulse';
+      }
+      if (claudeModelDisplay) {
+        claudeModelDisplay.innerHTML = `<span style="color: var(--accent-emerald)">● Ready</span> · Claude Pro · ${selectedModelName}`;
+      }
+      if (claudeChip) {
+        claudeChip.title = `Claude Code CLI: Ready (${statusData.claude.authStatus || 'Pro Subscription'})\nClick to refresh probe`;
+        claudeChip.style.cursor = 'pointer';
+        claudeChip.onclick = () => recheckClaudeStatus();
+      }
+    } else {
+      if (claudeIndicator) {
+        claudeIndicator.className = 'status-indicator warning';
+      }
+      if (claudeModelDisplay) {
+        claudeModelDisplay.innerHTML = `<span style="color: #f59e0b">⚠ Auth Needs Repair</span> <span style="font-size:0.65rem; text-decoration: underline; cursor: pointer;">[Retry]</span>`;
+      }
+      if (claudeChip) {
+        claudeChip.title = `Claude Code CLI: ${statusData.claude.authStatus || 'Authentication Required'}\nClick to re-probe or view login instructions.`;
+        claudeChip.style.cursor = 'pointer';
+        claudeChip.onclick = () => recheckClaudeStatus();
+      }
+    }
+  }
+}
+
+async function recheckClaudeStatus() {
+  const claudeModelDisplay = document.getElementById('display-claude-model');
+  if (claudeModelDisplay) claudeModelDisplay.innerHTML = `<span>⏳ Probing Claude...</span>`;
+  try {
+    const res = await fetch('/api/status?refresh=true');
+    const data = await res.json();
+    updateClusterChipsStatus(data);
+    if (data.claude?.ready) {
+      alert('✅ Claude Code CLI authentication is verified! Ready for autonomous code reviews.');
+    } else {
+      alert(`⚠️ Claude Code Subscription Authentication\n\nStatus: ${data.claude?.authStatus || 'Authentication Needed'}\n\nTo re-authenticate your Claude Pro account, run in your Terminal:\n  claude auth logout\n  claude update\n  claude auth login\n\nThen verify with:\n  claude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK"\n\nThen click [Retry] here.`);
+    }
+  } catch (err) {
+    console.warn('Failed to refresh status:', err);
   }
 }
 
@@ -138,12 +197,18 @@ async function loadModelsAndStatus() {
 
     // Wire change listeners to header chips
     codexSelect.addEventListener('change', () => updateChipDisplay(codexSelect, 'display-codex-model'));
-    claudeSelect.addEventListener('change', () => updateChipDisplay(claudeSelect, 'display-claude-model'));
+    claudeSelect.addEventListener('change', () => {
+      if (cachedClusterStatus) {
+        updateClusterChipsStatus(cachedClusterStatus);
+      } else {
+        updateChipDisplay(claudeSelect, 'display-claude-model');
+      }
+    });
     geminiSelect.addEventListener('change', () => updateChipDisplay(geminiSelect, 'display-gemini-model'));
 
     updateChipDisplay(codexSelect, 'display-codex-model');
-    updateChipDisplay(claudeSelect, 'display-claude-model');
     updateChipDisplay(geminiSelect, 'display-gemini-model');
+    updateClusterChipsStatus(statusData);
   } catch (err) {
     console.warn('Status or models API offline:', err);
   }

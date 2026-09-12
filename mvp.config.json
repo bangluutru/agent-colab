@@ -1,7 +1,7 @@
 {
   "defaultModels": {
     "codex": "gpt-6-astra",
-    "claude": "opus",
+    "claude": "claude-sonnet-5",
     "gemini": "gemini-3.8-flash"
   },
   "availableModels": {
@@ -39,10 +39,24 @@
         "name": "GPT-5.5",
         "group": "Default (Recommended)",
         "badge": "Stable",
-        "description": "Proven reasoning model for code review & stable workflows"
+        "description": "Stable reasoning, dependable full-stack workflows"
       }
     ],
     "claude": [
+      {
+        "id": "claude-sonnet-5",
+        "name": "Sonnet 5",
+        "group": "Primary Models",
+        "badge": "Default · Balanced",
+        "description": "Balanced adversarial code reviewer & flaw hunter"
+      },
+      {
+        "id": "claude-opus-5",
+        "name": "Opus 5",
+        "group": "Primary Models",
+        "badge": "Deep Reasoning",
+        "description": "Top-tier deep reasoning & exhaustive adversarial inspection"
+      },
       {
         "id": "fable-5.1",
         "name": "Fable 5.1",
@@ -50,20 +64,6 @@
         "badge": "Requires credits",
         "creditRequired": true,
         "description": "Mythos-class flagship tier for highest capability"
-      },
-      {
-        "id": "opus",
-        "name": "Opus 5",
-        "group": "Primary Models",
-        "badge": "Default",
-        "description": "Top-tier deep reasoning & exhaustive adversarial inspection"
-      },
-      {
-        "id": "sonnet",
-        "name": "Sonnet 5",
-        "group": "Primary Models",
-        "badge": "Balanced",
-        "description": "Balanced adversarial code reviewer & flaw hunter"
       },
       {
         "id": "haiku",
