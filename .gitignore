@@ -12,6 +12,9 @@ build/
 # Built applications / workspaces
 workspaces/*
 !workspaces/.gitkeep
+runs/run-*
+!runs/.gitkeep
+!runs/run-e2e-001/
 
 # OS / Editor files
 .DS_Store

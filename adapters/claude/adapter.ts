@@ -420,7 +420,7 @@ export class ClaudeAdapter implements AgentAdapter {
 
   public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
     let modelToUse = ClaudeAdapter.normalizeModelSlug(task.modelOverride || this.defaultModel);
-    const timeout = task.timeoutMs || 60000; // 60s timeout to prevent hanging (Section 18)
+    const timeout = task.timeoutMs || 180000; // 180s default timeout for deep review
 
     const fullPrompt = `${task.systemPrompt ? task.systemPrompt + '\n\n' : ''}${task.prompt}`;
     const buildArgs = (m: string) => ['-p', '--model', m, fullPrompt];

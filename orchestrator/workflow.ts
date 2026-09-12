@@ -372,7 +372,7 @@ export class WorkflowController {
           prompt: reviewPrompt,
           systemPrompt: claudeSystemPrompt,
           modelOverride: this.options.models?.claudeModel,
-          timeoutMs: 60000,
+          timeoutMs: 240000,
         },
         {
           runId: this.getRunId(),

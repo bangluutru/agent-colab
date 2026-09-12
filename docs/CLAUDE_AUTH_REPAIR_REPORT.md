@@ -191,3 +191,44 @@ npm run gate-0
 ```
 
 All checks will transition to **PASS** and Claude Code CLI will autonomously conduct all code reviews without falling back to Codex!
+
+---
+
+## 6. End-to-End Autonomous Pipeline Execution Proof (Taxonomy: OBSERVED)
+
+Following user login (`claude auth login --email haibangtran@gmail.com`), the autonomous multi-agent pipeline was resumed on run `run-1789217815327` (Interactive Fireworks Web Application):
+
+### Execution Timeline:
+1. **Gate-0 Verification**:
+   - `npm run diagnose:claude`: **PASS** on Level 1 (Binary v2.1.269), Level 2 (`loggedIn: true`, `claude.ai / pro`), Level 3 (`CLAUDE_PROBE_OK`).
+   - `npm run gate-0`: **ALL 7 CHECKS PASSED** (Codex, Claude, Gemini, Verifier).
+2. **Step 4: Claude Adversarial Review (Round 1)**:
+   - `[ORCHESTRATOR -> CLAUDE] REVIEW_REQUESTED [SENT]` (Model: `claude-sonnet-5`, `fallback: false`).
+   - Claude returned `CHANGES_REQUESTED` (`review-01.json`), detecting:
+     * Logic defect in `AutoFireScheduler.updateInterval` triggering immediate duplicate firework launches on slider dragging.
+     * Missing color sanitization / dark-color guard on custom hex color and text-color inputs.
+3. **Step 4b: Gemini Autonomous Repair (Round 1)**:
+   - Gemini (`agy`) applied surgical fixes to `src/utils/scheduler.js`, `src/components/ControlPanel.jsx`, and added unit tests.
+   - All 66 unit tests passed.
+4. **Step 4c: Claude Adversarial Review (Round 2)**:
+   - Claude re-examined codebase (`review-02.json`).
+   - Confirmed Round 1 issues resolved.
+   - Identified 3 edge cases:
+     * Clearing celebration barrage `setTimeout` handlers in `handleStopAll`.
+     * Enforcing non-empty text input guard on auto-fire and countdown triggers for text fireworks.
+     * Test coverage in `src/tests/App.test.jsx`.
+5. **Step 4d: Gemini Autonomous Repair (Round 2)**:
+   - Gemini updated `App.jsx`, `ControlPanel.jsx`, and added 144 lines to `App.test.jsx` (70 total tests).
+6. **Step 4e: Claude Adversarial Review (Round 3 — Final Approval)**:
+   - Claude conducted deep evaluation across all 30 files (`review-03.json`).
+   - **Decision: `APPROVED`** (`reviewer: claude`, `reviewerModel: claude-sonnet-5`, `issues: []`).
+7. **Step 5: Codex Final Conformance Check**:
+   - Codex checked full implementation against the original plan (`final-check.json`).
+   - **Decision: `CONFORMANT`** (`missing_items: []`, `deviations: []`).
+8. **Step 6: Automated Verification**:
+   - `vitest run`: 8 test files passed (70 tests total).
+   - `vite build`: Production bundle created in `dist/` (0 errors).
+9. **Final Disposition**:
+   - Status: **`COMPLETED`**
+   - Preview URL: `http://127.0.0.1:3000/preview/run-1789217815327/`
+   - Zero Anthropic API keys used, zero API billing, authentic Claude Pro subscription utilized end-to-end.
