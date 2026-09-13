@@ -1,12 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { CodexPlan } from '../protocol/schemas.js';
+import { PlanningResult, ReviewResult, FinalCheckResult, CodexPlan } from '../protocol/schemas.js';
 
 export class ContextBuilder {
   /**
-   * Builds isolated prompt for Codex Planning (Section 16)
+   * Generic Planning Prompt
    */
-  public static buildCodexPlanPrompt(userRequest: string, projectContext?: string): string {
+  public static buildPlanPrompt(userRequest: string, projectContext?: string): string {
     let prompt = `USER REQUEST:\n${userRequest}\n`;
     if (projectContext) {
       prompt += `\nPROJECT CONTEXT:\n${projectContext}\n`;
@@ -16,16 +16,16 @@ export class ContextBuilder {
   }
 
   /**
-   * Builds isolated prompt for Gemini Implementation (Section 16 & 21)
+   * Generic Physical Implementation Prompt
    */
-  public static buildGeminiImplPrompt(
+  public static buildImplementationPrompt(
     userRequest: string,
-    plan: CodexPlan,
+    plan: PlanningResult,
     workspacePath: string
   ): string {
     let prompt = `# IMPLEMENTATION TASK\n\n`;
     prompt += `## USER REQUIREMENTS\n${userRequest}\n\n`;
-    prompt += `## APPROVED CODEX PLAN\n`;
+    prompt += `## APPROVED IMPLEMENTATION PLAN\n`;
     prompt += `Objective: ${plan.objective}\n\n`;
 
     if (plan.requirements && plan.requirements.length > 0) {
@@ -82,9 +82,9 @@ export class ContextBuilder {
   }
 
   /**
-   * Builds isolated prompt for Gemini Code Repair (Section 26)
+   * Generic Code Repair Prompt
    */
-  public static buildGeminiFixPrompt(
+  public static buildFixPrompt(
     userRequest: string,
     issues: string[],
     contextSummary: string,
@@ -108,35 +108,18 @@ export class ContextBuilder {
   }
 
   /**
-   * Builds isolated context for Gemini Implementation (Section 16)
+   * Generic Independent Adversarial Review Prompt
    */
-  public static buildGeminiContext(userRequest: string, plan: CodexPlan, workspacePath: string): {
-    userRequest: string;
-    plan: CodexPlan;
-    acceptanceCriteria: string[];
-    workspacePath: string;
-  } {
-    return {
-      userRequest,
-      plan,
-      acceptanceCriteria: plan.acceptance_criteria,
-      workspacePath,
-    };
-  }
-
-  /**
-   * Builds isolated context for Claude Adversarial Review (Section 16)
-   */
-  public static buildClaudeReviewPrompt(
+  public static buildReviewPrompt(
     userRequest: string,
-    plan: CodexPlan,
+    plan: PlanningResult,
     gitDiff: string,
     testResults: string,
     keyFilesContent?: Record<string, string>
   ): string {
     let prompt = `# REVIEW TASK\n`;
     prompt += `## ORIGINAL USER REQUEST\n${userRequest}\n\n`;
-    prompt += `## CODEX IMPLEMENTATION PLAN\n${JSON.stringify(plan, null, 2)}\n\n`;
+    prompt += `## APPROVED IMPLEMENTATION PLAN\n${JSON.stringify(plan, null, 2)}\n\n`;
     prompt += `## ACCEPTANCE CRITERIA\n${plan.acceptance_criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\n`;
     prompt += `## TEST & BUILD RESULTS\n${testResults || 'No test output available.'}\n\n`;
     prompt += `## ACTUAL GIT DIFF\n\`\`\`diff\n${gitDiff || 'No git diff detected.'}\n\`\`\`\n\n`;
@@ -153,8 +136,74 @@ export class ContextBuilder {
   }
 
   /**
-   * Builds isolated context for Codex Final Conformance Check (Section 12 & 16)
+   * Generic Final Plan-Conformance Check Prompt
    */
+  public static buildFinalCheckPrompt(
+    userRequest: string,
+    plan: PlanningResult,
+    implementationSummary: string,
+    reviewSummary: string,
+    gitDiff: string,
+    testResults: string
+  ): string {
+    let prompt = `# FINAL PLAN-CONFORMANCE CHECK\n`;
+    prompt += `## ORIGINAL USER REQUEST\n${userRequest}\n\n`;
+    prompt += `## APPROVED IMPLEMENTATION PLAN\n${JSON.stringify(plan, null, 2)}\n\n`;
+    prompt += `## INDEPENDENT REVIEW DECISION\n${reviewSummary}\n\n`;
+    prompt += `## IMPLEMENTATION SUMMARY\n${implementationSummary}\n\n`;
+    prompt += `## TEST & VERIFICATION RESULTS\n${testResults}\n\n`;
+    prompt += `## FINAL GIT DIFF\n\`\`\`diff\n${gitDiff}\n\`\`\`\n\n`;
+    prompt += `Evaluate whether the implementation plan was actually fulfilled. Return CONFORMANT or NON_CONFORMANT in the required JSON schema.`;
+    return prompt;
+  }
+
+  // --- Backward-compatible aliases ---
+
+  public static buildCodexPlanPrompt(userRequest: string, projectContext?: string): string {
+    return this.buildPlanPrompt(userRequest, projectContext);
+  }
+
+  public static buildGeminiImplPrompt(
+    userRequest: string,
+    plan: CodexPlan,
+    workspacePath: string
+  ): string {
+    return this.buildImplementationPrompt(userRequest, plan, workspacePath);
+  }
+
+  public static buildGeminiFixPrompt(
+    userRequest: string,
+    issues: string[],
+    contextSummary: string,
+    testOutput?: string
+  ): string {
+    return this.buildFixPrompt(userRequest, issues, contextSummary, testOutput);
+  }
+
+  public static buildGeminiContext(userRequest: string, plan: CodexPlan, workspacePath: string): {
+    userRequest: string;
+    plan: CodexPlan;
+    acceptanceCriteria: string[];
+    workspacePath: string;
+  } {
+    return {
+      userRequest,
+      plan,
+      acceptanceCriteria: plan.acceptance_criteria,
+      workspacePath,
+    };
+  }
+
+  public static buildClaudeReviewPrompt(
+    userRequest: string,
+    plan: CodexPlan,
+    gitDiff: string,
+    testResults: string,
+    keyFilesContent?: Record<string, string>
+  ): string {
+    return this.buildReviewPrompt(userRequest, plan, gitDiff, testResults, keyFilesContent);
+  }
+
   public static buildCodexFinalCheckPrompt(
     userRequest: string,
     plan: CodexPlan,
@@ -163,14 +212,13 @@ export class ContextBuilder {
     gitDiff: string,
     testResults: string
   ): string {
-    let prompt = `# FINAL PLAN-CONFORMANCE CHECK\n`;
-    prompt += `## ORIGINAL USER REQUEST\n${userRequest}\n\n`;
-    prompt += `## ORIGINAL CODEX PLAN\n${JSON.stringify(plan, null, 2)}\n\n`;
-    prompt += `## CLAUDE INDEPENDENT REVIEW DECISION\n${claudeReviewSummary}\n\n`;
-    prompt += `## IMPLEMENTATION SUMMARY\n${implementationSummary}\n\n`;
-    prompt += `## TEST & VERIFICATION RESULTS\n${testResults}\n\n`;
-    prompt += `## FINAL GIT DIFF\n\`\`\`diff\n${gitDiff}\n\`\`\`\n\n`;
-    prompt += `Evaluate whether the implementation plan was actually fulfilled. Return CONFORMANT or NON_CONFORMANT in the required JSON schema.`;
-    return prompt;
+    return this.buildFinalCheckPrompt(
+      userRequest,
+      plan,
+      implementationSummary,
+      claudeReviewSummary,
+      gitDiff,
+      testResults
+    );
   }
 }

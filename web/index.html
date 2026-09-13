@@ -3,691 +3,1381 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Agent Collaboration Studio</title>
+  <title>AI Team — Agent Collaboration</title>
+  <meta name="description" content="One request. A full AI team: Codex plans, Gemini builds, Claude reviews. Together they create real software." />
+  <meta name="color-scheme" content="light dark" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('ai_team_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var activeTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+        if (activeTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.classList.remove('dark-theme');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
-  <div class="app-shell">
-    <!-- Top Navigation Header -->
-    <header class="top-nav">
-      <div class="nav-brand">
-        <div class="logo-gem">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-            <polyline points="2 17 12 22 22 17"></polyline>
-            <polyline points="2 12 12 17 22 12"></polyline>
+  <div class="app-layout">
+    <!-- Left Fixed Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <div class="brand-logo" aria-label="AI Team">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="#2563EB" />
+              <path d="M16 6L8 24H12.5L14.2 19.8H17.8L19.5 24H24L16 6ZM15.1 16.2L16 13.5L16.9 16.2H15.1Z" fill="white" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title-row">
+              <span class="brand-name">AI Team</span>
+              <span class="badge-mvp">MVP</span>
+            </div>
+            <span class="brand-subtitle">Agent Collaboration</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main Navigation">
+          <button class="nav-item active" id="nav-home" data-view="home">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+          </button>
+          <button class="nav-item" id="nav-runs" data-view="runs">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Runs</span>
+          </button>
+          <button class="nav-item" id="nav-workspace" data-view="workspace">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Workspace</span>
+          </button>
+          <button class="nav-item" id="nav-agents" data-view="agents">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Agents</span>
+          </button>
+          <button class="nav-item" id="nav-settings" data-view="settings">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="sidebar-bottom">
+        <!-- AI Team Mountain Card -->
+        <div class="sidebar-mountain-card">
+          <div class="mountain-content">
+            <h4 class="mountain-title">AI Team</h4>
+            <p class="mountain-desc">Codex plans.<br>Gemini builds.<br>Claude reviews.<br>Real work gets done.</p>
+          </div>
+          <!-- Stylized Mountain Silhouette Graphic -->
+          <svg class="mountain-art" viewBox="0 0 200 90" fill="none" preserveAspectRatio="none">
+            <path d="M0 90L40 45L75 75L120 25L160 65L185 40L200 55V90H0Z" fill="url(#mountGrad1)" opacity="0.45"/>
+            <path d="M0 90L25 60L55 80L95 40L145 78L175 52L200 70V90H0Z" fill="url(#mountGrad2)" opacity="0.6"/>
+            <path d="M0 90L60 70L100 85L150 60L200 80V90H0Z" fill="#3B82F6" opacity="0.3"/>
+            <defs>
+              <linearGradient id="mountGrad1" x1="100" y1="25" x2="100" y2="90" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#93C5FD"/>
+                <stop offset="1" stop-color="#1E40AF"/>
+              </linearGradient>
+              <linearGradient id="mountGrad2" x1="100" y1="40" x2="100" y2="90" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#60A5FA"/>
+                <stop offset="1" stop-color="#1D4ED8"/>
+              </linearGradient>
+            </defs>
           </svg>
         </div>
-        <div class="brand-titles">
-          <h1>AI Agent Orchestration Studio</h1>
-          <span class="badge-version">v0.1 Autonomous MVP</span>
+
+        <!-- System Status Line -->
+        <div class="sidebar-status-footer" id="sidebar-status-footer" title="Click to refresh agent health">
+          <div class="system-status-indicator">
+            <span class="status-dot green" id="sidebar-status-dot"></span>
+            <span class="status-text" id="sidebar-system-status">All Systems Ready</span>
+          </div>
+          <span class="version-tag">v0.1.0</span>
         </div>
       </div>
+    </aside>
 
-      <!-- Agent Cluster Status Cards -->
-      <div class="cluster-status-row">
-        <div class="agent-chip chip-codex" id="chip-codex">
-          <span class="status-indicator online"></span>
-          <div class="chip-info">
-            <span class="agent-role">CODEX CLI (Planner)</span>
-            <span class="agent-model-name" id="display-codex-model">GPT-6 Astra</span>
-          </div>
+    <!-- Main Content Container -->
+    <div class="main-wrapper">
+      <!-- Top Floating Navigation -->
+      <header class="top-nav-bar">
+        <div class="top-nav-left">
+          <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" aria-label="Toggle navigation">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
         </div>
-
-        <div class="agent-chip chip-claude" id="chip-claude">
-          <span class="status-indicator online"></span>
-          <div class="chip-info">
-            <span class="agent-role">CLAUDE CODE CLI (Reviewer)</span>
-            <span class="agent-model-name" id="display-claude-model">Sonnet 5</span>
-          </div>
-        </div>
-
-        <div class="agent-chip chip-gemini" id="chip-gemini">
-          <span class="status-indicator online pulse"></span>
-          <div class="chip-info">
-            <span class="agent-role">ANTIGRAVITY / GEMINI (Host)</span>
-            <span class="agent-model-name" id="display-gemini-model">Gemini 3.8 Flash</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Workspace Layout -->
-    <main class="workspace-grid">
-      <!-- Left: Command & Model Moderation Panel -->
-      <aside class="control-panel">
-        <div class="panel-section">
-          <div class="section-header">
-            <h2>⚙️ Model Moderation & Routing</h2>
-            <span class="section-tag">Zero-API-Key</span>
-          </div>
-
-          <!-- Model Selectors Form -->
-          <div class="form-group">
-            <label for="select-codex-model">
-              <span>Codex CLI Model (Planner)</span>
-              <span class="label-hint">ChatGPT Subscription</span>
-            </label>
-            <select id="select-codex-model" class="custom-select">
-              <optgroup label="Default / Recommended set of models">
-                <option value="gpt-6-astra" selected>GPT-6 Astra (Default · Architecture)</option>
-                <option value="gpt-5.6-sol">GPT-5.6 Sol (High Speed · Full-Stack)</option>
-                <option value="gpt-5.6-terra">GPT-5.6 Terra (Robust · Large Context)</option>
-                <option value="gpt-5.6-luna">GPT-5.6 Luna (Ultra-Fast · Quick Fixes)</option>
-                <option value="gpt-5.5">GPT-5.5 (Stable Reasoning · Workflows)</option>
-              </optgroup>
-            </select>
+        <div class="top-nav-right">
+          <button class="top-icon-btn" id="btn-theme-toggle" title="Toggle Theme" aria-label="Toggle theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+          <a href="/docs" target="_blank" class="top-text-btn" id="btn-docs-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Docs</span>
+          </a>
+          <div class="user-profile-badge" id="btn-user-profile" title="User Profile & Workspace">
+            <div class="user-avatar">N</div>
+            <span class="user-name">Nguyen</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </div>
 
-          <div class="form-group">
-            <label for="select-reasoning-effort">
-              <span>Reasoning Effort (Codex)</span>
-            </label>
-            <div class="segment-group" id="segment-reasoning">
-              <button type="button" class="segment-btn active" data-value="low">Low</button>
-              <button type="button" class="segment-btn" data-value="medium">Medium</button>
-              <button type="button" class="segment-btn" data-value="high">High</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="select-claude-model">
-              <span>Claude Code Model (Adversarial Reviewer)</span>
-              <span class="label-hint">Claude Subscription</span>
-            </label>
-            <select id="select-claude-model" class="custom-select">
-              <optgroup label="Primary Models">
-                <option value="claude-sonnet-5" selected>Sonnet 5 (Balanced Flaw Hunter · Default)</option>
-                <option value="claude-opus-5">Opus 5 (Deep Exhaustive Reviewer)</option>
-                <option value="haiku">Haiku 4.5 (High-Velocity Scanner)</option>
-                <option value="fable-5.1">Fable 5.1 ⓘ (Requires usage credits)</option>
-              </optgroup>
-              <optgroup label="More models (Extended)">
-                <option value="claude-fable-5">Fable 5 ⓘ (Requires usage credits)</option>
-                <option value="claude-opus-4-8">Opus 4.8 (Deep Inspection)</option>
-                <option value="claude-opus-4-7">Opus 4.7 (Deep Inspection)</option>
-                <option value="claude-opus-4-6">Opus 4.6 (High Precision)</option>
-                <option value="claude-sonnet-4-6">Sonnet 4.6 (Accurate Auditor)</option>
-              </optgroup>
-            </select>
-            <div style="margin-top: 0.45rem; display: flex; align-items: center; gap: 0.45rem;">
-              <input type="checkbox" id="check-reviewer-fallback" checked style="accent-color: var(--accent-cyan); width: 14px; height: 14px; cursor: pointer;">
-              <label for="check-reviewer-fallback" style="font-size: 0.72rem; color: var(--text-secondary); cursor: pointer; user-select: none;">
-                🛡️ Auto-switch to Codex Review if Claude unauthorized
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="select-gemini-model">
-              <span>Gemini Model (Host & Code Executor)</span>
-              <span class="label-hint">Antigravity IDE</span>
-            </label>
-            <select id="select-gemini-model" class="custom-select">
-              <optgroup label="Gemini Series">
-                <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash [High · Fast · Default]</option>
-                <option value="gemini-3.7-flash">Gemini 3.7 Flash [Medium · Fast]</option>
-                <option value="gemini-3.6-flash">Gemini 3.6 Flash [Medium · Fast]</option>
-                <option value="gemini-3.1-pro">Gemini 3.1 Pro [Low]</option>
-              </optgroup>
-              <optgroup label="Antigravity IDE Models">
-                <option value="claude-sonnet-4-6-thinking">Claude Sonnet 4.6 [Thinking]</option>
-                <option value="claude-opus-4-6-thinking">Claude Opus 4.6 [Thinking]</option>
-                <option value="gpt-oss-120b">GPT-OSS 120B [Medium]</option>
-              </optgroup>
-            </select>
-          </div>
-        </div>
-
-        <div class="panel-section">
-          <div class="section-header">
-            <h2>💬 Task Instruction</h2>
-          </div>
-          <div class="prompt-chips">
-            <button class="chip-preset active-preset" data-prompt="Build a simple Todo web app.
-Requirements:
-- React
-- add task
-- delete task
-- mark completed
-- localStorage persistence
-- basic responsive UI
-- unit tests
-- npm run build must succeed">
-              📋 React Todo App (Official Acceptance Test)
-            </button>
-            <button class="chip-preset" data-prompt="Build a minimal React calculator. Requirements: addition, subtraction, multiplication, division, division by zero must display exactly: 'Cannot divide by zero', responsive basic UI, unit tests, npm run build must succeed.">
-              🧮 React Calculator
-            </button>
-            <button class="chip-preset" data-prompt="Build an accessible stopwatch app with start, pause, lap list, and reset.">
-              ⏱️ Stopwatch App
-            </button>
-          </div>
-
-          <textarea id="prompt-input" rows="5" class="custom-textarea" placeholder="Type your development requirement here... Antigravity will coordinate Codex, Gemini, and Claude autonomously.">Build a simple Todo web app.
-Requirements:
-- React
-- add task
-- delete task
-- mark completed
-- localStorage persistence
-- basic responsive UI
-- unit tests
-- npm run build must succeed</textarea>
-
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button id="btn-start-run" class="btn-primary-action" style="flex: 1; min-width: 160px;">
-              <span class="btn-icon">⚡</span>
-              <span>Start Collaboration</span>
-            </button>
-            <button id="btn-retry-run" class="btn-retry-action" style="display: none; flex: 1; min-width: 140px;">
-              <span>🔄</span>
-              <span>Retry Run</span>
-            </button>
-            <button id="btn-cancel-run" class="btn-cancel-action" style="display: none;">
-              <span>🛑</span>
-              <span>Cancel</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Workflow Pipeline Progress Tracker -->
-        <div class="panel-section">
-          <div class="section-header">
-            <h2>🔄 Autonomous Pipeline State</h2>
-          </div>
-          <div class="pipeline-stepper" id="pipeline-stepper">
-            <div class="step-node active" id="step-user">
-              <div class="step-dot">1</div>
-              <div class="step-meta">
-                <span class="step-name">USER REQUEST</span>
-                <span class="step-sub">Requirement Ingestion</span>
+          <!-- User Profile & Workspace Dropdown Menu -->
+          <div class="user-profile-menu" id="user-profile-menu" style="display: none;">
+            <div class="user-menu-header">
+              <div class="user-avatar-lg">N</div>
+              <div class="user-menu-meta">
+                <strong class="user-menu-name">Nguyen</strong>
+                <span class="user-menu-role">Lead Architect · Admin</span>
+                <span class="user-menu-workspace">Workspace: <code>agent-collab</code></span>
               </div>
             </div>
-            <div class="step-connector"></div>
-
-            <div class="step-node" id="step-codex-plan">
-              <div class="step-dot">2</div>
-              <div class="step-meta">
-                <span class="step-name">CODEX PLANNING</span>
-                <span class="step-sub">Strategic Plan Generation</span>
-              </div>
+            <div class="user-menu-divider"></div>
+            <div class="user-menu-items">
+              <button type="button" class="user-menu-item" id="menu-item-theme">
+                <span class="user-menu-icon" id="user-menu-theme-icon">🌓</span>
+                <span id="user-menu-theme-label">Toggle Dark Theme</span>
+              </button>
+              <button type="button" class="user-menu-item" id="menu-item-settings">
+                <span class="user-menu-icon">⚙️</span>
+                <span>Team Routing Settings</span>
+              </button>
+              <button type="button" class="user-menu-item" id="menu-item-docs">
+                <span class="user-menu-icon">📘</span>
+                <span>Documentation &amp; Guide</span>
+              </button>
+              <button type="button" class="user-menu-item" id="menu-item-agents">
+                <span class="user-menu-icon">⚡</span>
+                <span>Agent Cluster Status</span>
+              </button>
             </div>
-            <div class="step-connector"></div>
-
-            <div class="step-node" id="step-gemini-impl">
-              <div class="step-dot">3</div>
-              <div class="step-meta">
-                <span class="step-name">GEMINI EXECUTOR</span>
-                <span class="step-sub">Code & Test Construction</span>
-              </div>
-            </div>
-            <div class="step-connector"></div>
-
-            <div class="step-node" id="step-claude-review">
-              <div class="step-dot">4</div>
-              <div class="step-meta">
-                <span class="step-name">CLAUDE ADVERSARIAL REVIEW</span>
-                <span class="step-sub">Multi-round Code Critique</span>
-              </div>
-            </div>
-            <div class="step-connector"></div>
-
-            <div class="step-node" id="step-codex-conformance">
-              <div class="step-dot">5</div>
-              <div class="step-meta">
-                <span class="step-name">CODEX CONFORMANCE</span>
-                <span class="step-sub">Plan Conformance Audit</span>
-              </div>
-            </div>
-            <div class="step-connector"></div>
-
-            <div class="step-node" id="step-verified">
-              <div class="step-dot">6</div>
-              <div class="step-meta">
-                <span class="step-name">VERIFIED & COMPLETED</span>
-                <span class="step-sub">23/23 Tests & Production Build</span>
-              </div>
+            <div class="user-menu-footer">
+              <span class="status-dot green"></span>
+              <span>All Systems Operational (v0.1.0)</span>
             </div>
           </div>
         </div>
-      </aside>
+      </header>
 
-      <!-- Right: Live Inspection Deck & Artifact Viewer -->
-      <section class="inspection-deck">
-        <!-- Deck Navigation Tabs -->
-        <div class="deck-header">
-          <div class="run-selector-container">
-            <label for="select-run">Active Run:</label>
-            <select id="select-run" class="run-dropdown">
-              <option value="run-e2e-001">run-e2e-001 (React Calculator E2E - Verified)</option>
-              <option value="test-2-defect">test-2-defect (Controlled Defect Adversarial Test)</option>
-              <option value="test-3-interruption">test-3-interruption (Process Interruption Test)</option>
-            </select>
+      <!-- Main Scrollable Views -->
+      <main class="content-scroll">
+        <!-- ================================================================ -->
+        <!-- VIEW 1: HOME VIEW (Default) -->
+        <!-- ================================================================ -->
+        <section id="home-view" class="view-panel active">
+          <!-- Background Ambient Glow Gradients -->
+          <div class="ambient-glows" aria-hidden="true">
+            <div class="glow-blue"></div>
+            <div class="glow-purple"></div>
+            <div class="glow-pink"></div>
           </div>
 
-          <nav class="deck-tabs">
-            <button class="tab-btn active" data-tab="tab-overview">📊 Overview</button>
-            <button class="tab-btn" data-tab="tab-preview">🌐 Live App Preview</button>
-            <button class="tab-btn" data-tab="tab-files">📁 Workspace Files</button>
-            <button class="tab-btn" data-tab="tab-plan">📐 Codex Plan</button>
-            <button class="tab-btn" data-tab="tab-review">🛡️ Claude Review</button>
-            <button class="tab-btn" data-tab="tab-conformance">🎯 Conformance</button>
-            <button class="tab-btn" data-tab="tab-events">📜 Audit Log</button>
-          </nav>
-        </div>
+          <div class="home-container">
+            <!-- Hero Section -->
+            <section class="hero-section">
+              <span class="hero-eyebrow">ONE REQUEST. A FULL AI TEAM.</span>
+              <h1 class="hero-title">Turn your ideas into <span class="gradient-text">reality</span></h1>
+              <p class="hero-subtitle">Assign your AI team. Plan, build, and adversarial review. Together, they create real software.</p>
+            </section>
 
-        <!-- Tab Contents -->
-        <div class="tab-viewport">
-          <!-- Tab: Overview -->
-          <div class="tab-content active" id="tab-overview">
-            <!-- Cockpit: Current Autonomous Run Status & Real-time Live Stepper -->
-            <div class="cockpit-card" id="cockpit-card">
-              <div class="cockpit-header">
-                <div class="cockpit-title-group">
-                  <span class="cockpit-tag">AUTONOMOUS RUN</span>
-                  <h3 id="cockpit-run-id">run-todo-...</h3>
-                  <span class="cockpit-status-badge" id="cockpit-status-badge">REQUEST_RECEIVED</span>
-                </div>
-                <div class="cockpit-actions">
-                  <button id="btn-cockpit-retry" class="btn-retry-action" style="display: none;">
-                    <span>🔄</span> <span>Retry Collaboration</span>
-                  </button>
-                  <button id="btn-cockpit-cancel" class="btn-cancel-action" style="display: none;">
-                    <span>🛑</span> <span>Cancel Run</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Real-Time Horizontal Stepper -->
-              <div class="cockpit-stepper" id="cockpit-stepper">
-                <div class="cockpit-step active" id="cstep-1">
-                  <div class="cstep-dot">1</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name">1. REQUEST</span>
-                    <span class="cstep-role">User Ingestion</span>
-                  </div>
-                </div>
-                <div class="cstep-line"></div>
-                <div class="cockpit-step" id="cstep-2">
-                  <div class="cstep-dot">2</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name">2. CODEX PLAN</span>
-                    <span class="cstep-role">Architecture & Spec</span>
-                  </div>
-                </div>
-                <div class="cstep-line"></div>
-                <div class="cockpit-step" id="cstep-3">
-                  <div class="cstep-dot">3</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name">3. GEMINI BUILD</span>
-                    <span class="cstep-role">Code & Unit Tests</span>
-                  </div>
-                </div>
-                <div class="cstep-line"></div>
-                <div class="cockpit-step" id="cstep-4">
-                  <div class="cstep-dot">4</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name" id="cstep-4-name">4. CLAUDE REVIEW</span>
-                    <span class="cstep-role" id="cstep-4-role">Adversarial Critique</span>
-                  </div>
-                </div>
-                <div class="cstep-line"></div>
-                <div class="cockpit-step" id="cstep-5">
-                  <div class="cstep-dot">5</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name">5. CODEX AUDIT</span>
-                    <span class="cstep-role">Plan Conformance</span>
-                  </div>
-                </div>
-                <div class="cstep-line"></div>
-                <div class="cockpit-step" id="cstep-6">
-                  <div class="cstep-dot">6</div>
-                  <div class="cstep-info">
-                    <span class="cstep-name">6. COMPLETED</span>
-                    <span class="cstep-role">Verification Gate</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 4-Agent Live Status Grid -->
-              <div class="cockpit-agents-grid">
-                <div class="cockpit-agent-box" id="cagent-codex">
-                  <div class="cagent-header">
-                    <span class="cagent-badge codex">CODEX CLI</span>
-                    <span class="cagent-role">Planner & Conformance</span>
-                  </div>
-                  <span class="cagent-status" id="cagent-codex-status">Waiting</span>
-                </div>
-                <div class="cockpit-agent-box" id="cagent-gemini">
-                  <div class="cagent-header">
-                    <span class="cagent-badge gemini">GEMINI / AGY</span>
-                    <span class="cagent-role">Code Construction</span>
-                  </div>
-                  <span class="cagent-status" id="cagent-gemini-status">Waiting</span>
-                </div>
-                <div class="cockpit-agent-box" id="cagent-claude">
-                  <div class="cagent-header">
-                    <span class="cagent-badge claude">CLAUDE CODE</span>
-                    <span class="cagent-role">Adversarial Reviewer</span>
-                  </div>
-                  <span class="cagent-status" id="cagent-claude-status">Waiting</span>
-                </div>
-                <div class="cockpit-agent-box" id="cagent-verifier">
-                  <div class="cagent-header">
-                    <span class="cagent-badge system">VERIFIER</span>
-                    <span class="cagent-role">Test & Build Machine</span>
-                  </div>
-                  <span class="cagent-status" id="cagent-verifier-status">Waiting</span>
-                </div>
-              </div>
-
-              <!-- Overall Progress Bar -->
-              <div class="cockpit-progress-row">
-                <div class="progress-labels">
-                  <span>Overall Pipeline Progress</span>
-                  <span id="cockpit-progress-text">0%</span>
-                </div>
-                <div class="progress-track">
-                  <div class="progress-fill" id="cockpit-progress-fill" style="width: 0%;"></div>
-                </div>
-              </div>
-
-              <!-- Alert Banner (for BLOCKED/FAILED) -->
-              <div class="cockpit-alert-banner" id="cockpit-alert-banner" style="display: none;">
-                <div class="alert-icon">⚠️</div>
-                <div class="alert-body">
-                  <strong id="alert-title">Workflow Blocked</strong>
-                  <p id="alert-message">Claude Code subscription authentication is unavailable.</p>
-                  <div class="alert-action-snippet" id="alert-snippet-box" style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.35); padding: 0.35rem 0.6rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
-                    <code id="alert-code-cmd" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-cyan);">claude auth login --email haibangtran@gmail.com</code>
-                    <button id="btn-copy-auth-cmd" class="btn-sm" style="padding: 0.15rem 0.45rem; font-size: 0.68rem; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer;">📋 Copy</button>
-                  </div>
-                </div>
-                <div class="alert-actions-group" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                  <button id="btn-banner-retry" class="btn-primary-action btn-sm" title="Re-probe Claude Code CLI and continue review">
-                    <span>🔄</span> <span>Retry Claude Review</span>
-                  </button>
-                  <button id="btn-banner-fallback" class="btn-secondary-action btn-sm" title="Skip Claude and continue immediately with Codex Review" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <span>🛡️</span> <span>Use Codex Fallback</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Real-Time Activity Feed -->
-              <div class="cockpit-feed-container">
-                <div class="feed-header">
-                  <span>📡 Live Activity Stream</span>
-                  <span class="feed-pulse" id="feed-status-pulse">● LIVE</span>
-                </div>
-                <div class="cockpit-feed-logs" id="cockpit-feed-logs">
-                  <div class="feed-empty">Ready. Click "Start Collaboration" to launch the autonomous agent team.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Project Output & Local Execution Card -->
-            <div class="project-output-card" id="project-output-card">
-              <div class="output-card-header">
-                <div class="output-title-wrap">
-                  <span class="output-icon">📦</span>
-                  <div>
-                    <h4>Project Output & Local Run Directory</h4>
-                    <span class="output-subtitle">Thư mục mã nguồn, bản build hoàn chỉnh và lệnh chạy thử ứng dụng</span>
-                  </div>
-                </div>
-                <div class="output-header-actions">
-                  <button id="btn-open-finder" class="btn-action-glow" title="Mở trực tiếp thư mục mã nguồn trong macOS Finder">
-                    <span>📂</span> <span>Open in Finder</span>
-                  </button>
-                  <button id="btn-view-preview-tab" class="btn-action-cyan" title="Xem ứng dụng trực tiếp">
-                    <span>🌐</span> <span>Live App Preview</span>
-                  </button>
-                  <a id="btn-open-preview-external" href="#" target="_blank" class="btn-action-outline" title="Mở trong tab trình duyệt mới">
-                    <span>↗️</span> <span>New Tab</span>
-                  </a>
-                </div>
-              </div>
-
-              <!-- Output Paths Grid -->
-              <div class="output-paths-grid">
-                <div class="path-box">
-                  <div class="path-label-row">
-                    <span class="path-label">📁 Thư mục Workspace Dự Án (Source Code)</span>
-                    <button class="btn-copy-mini" data-copy-target="output-workspace-path">📋 Copy Path</button>
-                  </div>
-                  <div class="path-display-row">
-                    <code id="output-workspace-path">Loading workspace path...</code>
-                  </div>
-                </div>
-
-                <div class="path-box">
-                  <div class="path-label-row">
-                    <span class="path-label">⚡ Thư Mục Bản Build Sản Phẩm (Production Dist)</span>
-                    <button class="btn-copy-mini" data-copy-target="output-dist-path">📋 Copy Path</button>
-                  </div>
-                  <div class="path-display-row">
-                    <code id="output-dist-path">Loading dist path...</code>
-                  </div>
-                </div>
-              </div>
-
-              <!-- CLI Run & Test Commands -->
-              <div class="output-commands-section">
-                <div class="commands-header">
-                  <span class="commands-title">💻 Lệnh Chạy Thử Ứng Dụng Trong Terminal (Terminal Commands)</span>
-                  <span class="commands-hint">Nhấp nút "Copy" để dán chạy ngay trong Terminal máy bạn</span>
-                </div>
-                <div class="commands-grid">
-                  <div class="command-card">
-                    <div class="command-meta">
-                      <span class="cmd-badge preview">1. Chạy Thử Bản Build (Preview)</span>
-                      <button class="btn-copy-cmd" data-copy-target="cmd-preview">📋 Copy</button>
-                    </div>
-                    <code class="cmd-code" id="cmd-preview">cd "..." && npm run preview</code>
-                    <span class="cmd-desc">Khởi chạy web server cho bản build dist/ trên localhost</span>
-                  </div>
-
-                  <div class="command-card">
-                    <div class="command-meta">
-                      <span class="cmd-badge dev">2. Môi Trường Phát Triển (Dev Server)</span>
-                      <button class="btn-copy-cmd" data-copy-target="cmd-dev">📋 Copy</button>
-                    </div>
-                    <code class="cmd-code" id="cmd-dev">cd "..." && npm run dev</code>
-                    <span class="cmd-desc">Chạy Vite dev server với Hot-Reload (HMR)</span>
-                  </div>
-
-                  <div class="command-card">
-                    <div class="command-meta">
-                      <span class="cmd-badge test">3. Chạy Toàn Bộ Test (Unit Tests)</span>
-                      <button class="btn-copy-cmd" data-copy-target="cmd-test">📋 Copy</button>
-                    </div>
-                    <code class="cmd-code" id="cmd-test">cd "..." && npm test</code>
-                    <span class="cmd-desc">Chạy Vitest tự động kiểm thử toàn bộ tính năng</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="overview-grid">
-              <div class="metric-card">
-                <span class="metric-label">COLLABORATION STATUS</span>
-                <span class="metric-value text-emerald" id="overview-status">VERIFIED & PASS</span>
-                <span class="metric-desc">Autonomous multi-agent workflow completed</span>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">CLAUDE CODE DECISION</span>
-                <span class="metric-value text-purple" id="overview-claude-decision">APPROVED (Round 3)</span>
-                <span class="metric-desc">8 subtle edge cases caught & resolved</span>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">AUTOMATED TESTS</span>
-                <span class="metric-value text-cyan" id="overview-tests">23 / 23 Passed</span>
-                <span class="metric-desc">Vitest unit & React Testing Library</span>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">PRODUCTION BUILD</span>
-                <span class="metric-value text-emerald" id="overview-build">Exit Code 0</span>
-                <span class="metric-desc">Vite dist/ generated in 347ms</span>
-              </div>
-            </div>
-
-            <div class="card-section">
-              <h3>Collaborating Agent Traceability</h3>
-              <div class="traceability-list" id="traceability-list">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Tab: Live App Preview (Interactive Built App iframe) -->
-          <div class="tab-content" id="tab-preview">
-            <div class="preview-toolbar">
-              <div class="preview-toolbar-left">
-                <div class="device-toggles">
-                  <button class="btn-device active" data-width="100%">Desktop (Fluid)</button>
-                  <button class="btn-device" data-width="768px">Tablet (768px)</button>
-                  <button class="btn-device" data-width="375px">Mobile (375px)</button>
-                </div>
-                <span class="preview-url-badge" id="preview-url-display">/preview/...</span>
-              </div>
-              <div class="preview-toolbar-right">
-                <button id="btn-reload-preview" class="btn-preview-action" title="Tải lại giao diện preview">
-                  <span>🔄</span> <span>Reload</span>
-                </button>
-                <a href="#" target="_blank" class="btn-open-external" id="preview-external-link" title="Mở trong tab trình duyệt riêng biệt">
-                  <span>Open in Separate Window</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <line x1="10" y1="14" x2="21" y2="3"></line>
+            <!-- Search / Main Prompt Bar (Primary Focus) -->
+            <div class="search-bar-shell" id="search-bar-shell">
+              <div class="search-bar-inner">
+                <div class="search-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
-                </a>
-              </div>
-            </div>
-            <div class="preview-frame-wrapper">
-              <iframe src="about:blank" id="preview-iframe" title="Application Preview"></iframe>
-            </div>
-          </div>
+                </div>
 
-          <!-- Tab: Workspace Files Explorer -->
-          <div class="tab-content" id="tab-files">
-            <div class="files-explorer-shell">
-              <div class="files-toolbar">
-                <div class="files-toolbar-left">
-                  <span class="files-icon">📁</span>
-                  <span class="files-title">Workspace Explorer</span>
-                  <span class="files-count-badge" id="files-count-badge">0 files</span>
-                  <span class="files-path-text" id="files-root-path">...</span>
+                <div class="search-input-wrap">
+                  <textarea id="prompt-input" rows="1" placeholder="What do you want to build today?" aria-label="Requirement prompt"></textarea>
                 </div>
-                <div class="files-toolbar-right">
-                  <button id="btn-refresh-files" class="btn-preview-action" title="Làm mới danh sách file">🔄 Refresh</button>
-                  <button id="btn-copy-active-file" class="btn-preview-action" title="Copy nội dung file">📋 Copy File</button>
-                  <button id="btn-files-open-finder" class="btn-preview-action" title="Mở thư mục trong macOS">📂 Finder</button>
+
+                <div class="search-actions-row">
+                  <button type="button" class="tool-btn" id="btn-attach" title="Attach context or spec file (.md, .txt, .json)" aria-label="Attach file">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                  </button>
+                  <input type="file" id="file-spec-picker" accept=".md,.txt,.json,.js,.ts,.html,.css,.yaml,.yml" style="display: none;" />
+
+                  <button type="button" class="tool-btn" id="btn-open-settings" title="Configure AI Team Models & Settings" aria-label="Team settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="4" y1="21" x2="4" y2="14"></line>
+                      <line x1="4" y1="10" x2="4" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12" y2="3"></line>
+                      <line x1="20" y1="21" x2="20" y2="16"></line>
+                      <line x1="20" y1="12" x2="20" y2="3"></line>
+                      <line x1="1" y1="14" x2="7" y2="14"></line>
+                      <line x1="9" y1="8" x2="15" y2="8"></line>
+                      <line x1="17" y1="16" x2="23" y2="16"></line>
+                    </svg>
+                  </button>
+
+                  <button type="button" id="btn-start-run" class="btn-start-team">
+                    <span id="start-btn-label">Start with AI Team</span>
+                    <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <div class="files-main-layout">
-                <!-- Sidebar: File Tree -->
-                <div class="files-sidebar">
-                  <div class="files-search-box">
-                    <input type="text" id="files-search-input" placeholder="🔍 Search files (e.g. App.jsx)..." />
+            </div>
+
+            <!-- Example Prompt Chips -->
+            <div class="prompt-examples-row">
+              <span class="examples-label">Try an example:</span>
+              <div class="chips-list">
+                <button type="button" class="chip-preset" data-prompt="Build a simple Todo web app.
+Requirements:
+- React
+- add task
+- delete task
+- mark completed
+- localStorage persistence
+- basic responsive UI
+- unit tests
+- npm run build must succeed">Build a todo app</button>
+
+                <button type="button" class="chip-preset" data-prompt="Create a real-time analytics dashboard with customizable metric cards, chart visualizations, date range filtering, and clean responsive layout.">Create a dashboard</button>
+
+                <button type="button" class="chip-preset" data-prompt="Design a modern SaaS landing page with responsive hero, feature grid, interactive pricing calculator, testimonial carousel, and high-converting CTA.">Design a landing page</button>
+
+                <button type="button" class="chip-preset" data-prompt="Build a clean Node/Express REST API for task management with JWT authentication, validation middleware, rate limiting, and Jest unit tests.">Build a REST API</button>
+
+                <button type="button" class="chip-preset" data-prompt="Analyze the existing codebase, identify architectural bottlenecks and security hotspots, and create an automated refactoring plan.">Analyze a codebase</button>
+              </div>
+            </div>
+
+            <!-- Compact Live Run Banner on Home (Active Run State) -->
+            <div class="home-live-banner" id="home-live-banner" style="display: none;">
+              <div class="live-banner-header">
+                <div class="live-banner-title-group">
+                  <span class="live-pulse-dot"></span>
+                  <span class="live-banner-tag">RUNNING NOW</span>
+                  <h3 class="live-banner-title" id="home-live-title">Building your project...</h3>
+                  <span class="live-banner-id" id="home-live-id">run-...</span>
+                </div>
+                <div class="live-banner-actions">
+                  <button type="button" id="btn-cancel-run" class="btn-banner-cancel">
+                    <span>🛑</span> <span>Cancel</span>
+                  </button>
+                  <button type="button" id="btn-retry-run" class="btn-banner-retry" style="display: none;">
+                    <span>🔄</span> <span>Retry</span>
+                  </button>
+                  <button type="button" class="btn-view-run-details" id="btn-view-live-run">
+                    <span>View Run Details</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Live Stepper & Progress -->
+              <div class="home-progress-container">
+                <div class="home-progress-bar-wrap">
+                  <div class="home-progress-fill" id="home-progress-fill" style="width: 15%;"></div>
+                </div>
+                <div class="home-progress-meta">
+                  <span class="home-progress-phase" id="home-progress-phase">Architecting plan...</span>
+                  <span class="home-progress-percent" id="home-progress-percent">15%</span>
+                </div>
+              </div>
+
+              <!-- Mini live log snippet -->
+              <div class="home-live-log-snippet" id="home-live-snippet">
+                <span class="snippet-time" id="home-snippet-time">12:42</span>
+                <span class="snippet-text" id="home-snippet-text">Started architectural planning</span>
+              </div>
+            </div>
+
+            <!-- 3-Stage Collaboration Flow Cards (Model-Agnostic) -->
+            <section class="agent-flow-section" aria-label="Workflow Stages & Assignments">
+              <div class="agent-cards-row">
+                <!-- Stage 1: PLAN -->
+                <div class="agent-card stage-card" id="card-stage-plan">
+                  <div class="stage-card-top">
+                    <span class="stage-tag">STAGE 01</span>
+                    <span class="stage-category">Architecture</span>
                   </div>
-                  <ul class="files-tree-list" id="files-tree-list">
-                    <li class="files-empty-item">Loading files...</li>
+
+                  <div class="agent-card-header">
+                    <div class="stage-title-wrap">
+                      <h3 class="agent-card-title">01 PLAN</h3>
+                      <span class="agent-card-role">Strategic Planning</span>
+                    </div>
+                  </div>
+
+                  <!-- Dynamic Agent Assignment Pill with Quick Popover -->
+                  <div class="stage-assignment-box">
+                    <div class="assigned-agent-pill" id="stage-planner-pill">
+                      <span class="agent-pill-avatar" id="stage-planner-icon">🔮</span>
+                      <div class="agent-pill-details">
+                        <span class="agent-pill-role-label">Assigned AI</span>
+                        <div class="agent-pill-name-row">
+                          <strong class="agent-pill-name" id="stage-planner-name">Codex CLI</strong>
+                          <span class="agent-pill-model" id="stage-planner-model">GPT-6 Astra</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-change-agent" id="btn-change-planner" data-stage="planner" data-target="popover-planner" title="Change Planner AI & Model">Change</button>
+
+                    <!-- Quick Change Popover -->
+                    <div class="agent-quick-popover" id="popover-planner" style="display: none;">
+                      <div class="popover-header">
+                        <span>Select Planner AI</span>
+                        <button type="button" class="popover-close" data-target="popover-planner">&times;</button>
+                      </div>
+                      <div class="popover-body">
+                        <div class="popover-group">
+                          <label>Agent</label>
+                          <select class="popover-select select-agent-picker" data-stage="planner" id="quick-select-planner-agent">
+                            <option value="codex">Codex CLI (OpenAI)</option>
+                            <option value="gemini">Gemini / Antigravity (Google)</option>
+                            <option value="claude">Claude Code CLI (Anthropic)</option>
+                          </select>
+                        </div>
+                        <div class="popover-group">
+                          <label>Model</label>
+                          <select class="popover-select select-model-picker" data-stage="planner" id="quick-select-planner-model">
+                            <!-- Populated dynamically -->
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul class="agent-checklist">
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Analyzes user request & constraints</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Designs modular file architecture</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Defines testable acceptance criteria</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Emits structured schema (plan.json)</span>
+                    </li>
                   </ul>
-                </div>
-                <!-- Main: File Viewer -->
-                <div class="files-viewer-panel">
-                  <div class="file-viewer-header">
-                    <span class="file-viewer-active-name" id="file-active-name">No file selected</span>
-                    <span class="file-viewer-size" id="file-active-size"></span>
-                  </div>
-                  <div class="file-viewer-body">
-                    <pre><code class="file-code-display" id="file-code-display">// Select a file from the list on the left to inspect its code.</code></pre>
+
+                  <div class="agent-card-footer">
+                    <div class="status-pill status-pill-green" id="stage-planner-status">
+                      <span class="status-dot green"></span>
+                      <span id="planner-status-text">Ready to plan</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Tab: Codex Plan -->
-          <div class="tab-content" id="tab-plan">
-            <div class="card-section">
-              <div class="sub-header">
-                <h3>Codex Architecture & Implementation Plan</h3>
-                <span class="badge-role">Planner: OpenAI Codex CLI</span>
-              </div>
-              <div id="plan-container" class="plan-display">
-                <!-- Formatted plan populated here -->
-              </div>
-            </div>
-          </div>
+                <!-- Flow Arrow -->
+                <div class="flow-arrow-wrap" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
 
-          <!-- Tab: Claude Review -->
-          <div class="tab-content" id="tab-review">
-            <div class="card-section">
-              <div class="sub-header">
-                <h3>Claude Code Adversarial Code Review</h3>
-                <span class="badge-role badge-purple">Reviewer: Anthropic Claude Code CLI</span>
-              </div>
-              <div class="review-round-selector" id="review-round-selector">
-                <button class="round-btn" data-round="1">Round 1 (CHANGES_REQUESTED)</button>
-                <button class="round-btn" data-round="2">Round 2 (CHANGES_REQUESTED)</button>
-                <button class="round-btn active" data-round="3">Round 3 (APPROVED 🎉)</button>
-              </div>
-              <div id="review-container" class="review-display">
-                <!-- Review details populated here -->
-              </div>
-            </div>
-          </div>
+                <!-- Stage 2: BUILD -->
+                <div class="agent-card stage-card" id="card-stage-build">
+                  <div class="stage-card-top">
+                    <span class="stage-tag">STAGE 02</span>
+                    <span class="stage-category">Execution</span>
+                  </div>
 
-          <!-- Tab: Conformance -->
-          <div class="tab-content" id="tab-conformance">
-            <div class="card-section">
-              <div class="sub-header">
-                <h3>Codex Plan-Conformance Check</h3>
-                <span class="badge-role">Strategist: Codex CLI</span>
-              </div>
-              <div id="conformance-container" class="conformance-display">
-                <!-- Conformance check details populated here -->
-              </div>
-            </div>
-          </div>
+                  <div class="agent-card-header">
+                    <div class="stage-title-wrap">
+                      <h3 class="agent-card-title">02 BUILD</h3>
+                      <span class="agent-card-role">Physical Construction</span>
+                    </div>
+                  </div>
 
-          <!-- Tab: Audit Events -->
-          <div class="tab-content" id="tab-events">
-            <div class="card-section">
-              <div class="sub-header">
-                <h3>Inter-Agent Protocol Audit Stream (events.jsonl)</h3>
-                <span class="badge-role badge-cyan">Zero-Data-Loss Audit Log</span>
+                  <!-- Dynamic Agent Assignment Pill with Quick Popover -->
+                  <div class="stage-assignment-box">
+                    <div class="assigned-agent-pill" id="stage-builder-pill">
+                      <span class="agent-pill-avatar" id="stage-builder-icon">⚡</span>
+                      <div class="agent-pill-details">
+                        <span class="agent-pill-role-label">Assigned AI</span>
+                        <div class="agent-pill-name-row">
+                          <strong class="agent-pill-name" id="stage-builder-name">Gemini 3.8</strong>
+                          <span class="agent-pill-model" id="stage-builder-model">Gemini 3.8 Flash</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-change-agent" id="btn-change-builder" data-stage="builder" data-target="popover-builder" title="Change Builder AI & Model">Change</button>
+
+                    <!-- Quick Change Popover -->
+                    <div class="agent-quick-popover" id="popover-builder" style="display: none;">
+                      <div class="popover-header">
+                        <span>Select Builder AI</span>
+                        <button type="button" class="popover-close" data-target="popover-builder">&times;</button>
+                      </div>
+                      <div class="popover-body">
+                        <div class="popover-group">
+                          <label>Agent</label>
+                          <select class="popover-select select-agent-picker" data-stage="builder" id="quick-select-builder-agent">
+                            <option value="gemini">Gemini / Antigravity (Google)</option>
+                            <option value="codex">Codex CLI (OpenAI)</option>
+                            <option value="claude">Claude Code CLI (Anthropic)</option>
+                          </select>
+                        </div>
+                        <div class="popover-group">
+                          <label>Model</label>
+                          <select class="popover-select select-model-picker" data-stage="builder" id="quick-select-builder-model">
+                            <!-- Populated dynamically -->
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul class="agent-checklist">
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Initializes workspace & packages</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Writes production code & components</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Creates automated unit test suite</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Performs surgical fixes on audit</span>
+                    </li>
+                  </ul>
+
+                  <div class="agent-card-footer">
+                    <div class="status-pill status-pill-blue" id="stage-builder-status">
+                      <span class="status-dot blue"></span>
+                      <span id="builder-status-text">Workspace write ready</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Flow Arrow -->
+                <div class="flow-arrow-wrap" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+
+                <!-- Stage 3: REVIEW -->
+                <div class="agent-card stage-card" id="card-stage-review">
+                  <div class="stage-card-top">
+                    <span class="stage-tag">STAGE 03</span>
+                    <span class="stage-category">Quality Gate</span>
+                  </div>
+
+                  <div class="agent-card-header">
+                    <div class="stage-title-wrap">
+                      <h3 class="agent-card-title">03 REVIEW</h3>
+                      <span class="agent-card-role">Adversarial Inspection</span>
+                    </div>
+                  </div>
+
+                  <!-- Dynamic Agent Assignment Pill with Quick Popover -->
+                  <div class="stage-assignment-box">
+                    <div class="assigned-agent-pill" id="stage-reviewer-pill">
+                      <span class="agent-pill-avatar" id="stage-reviewer-icon">🛡️</span>
+                      <div class="agent-pill-details">
+                        <span class="agent-pill-role-label">Assigned AI</span>
+                        <div class="agent-pill-name-row">
+                          <strong class="agent-pill-name" id="stage-reviewer-name">Claude Code</strong>
+                          <span class="agent-pill-model" id="stage-reviewer-model">Sonnet 5</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-change-agent" id="btn-change-reviewer" data-stage="reviewer" data-target="popover-reviewer" title="Change Reviewer AI & Model">Change</button>
+
+                    <!-- Quick Change Popover -->
+                    <div class="agent-quick-popover" id="popover-reviewer" style="display: none;">
+                      <div class="popover-header">
+                        <span>Select Reviewer AI</span>
+                        <button type="button" class="popover-close" data-target="popover-reviewer">&times;</button>
+                      </div>
+                      <div class="popover-body">
+                        <div class="popover-group">
+                          <label>Agent</label>
+                          <select class="popover-select select-agent-picker" data-stage="reviewer" id="quick-select-reviewer-agent">
+                            <option value="claude">Claude Code CLI (Anthropic)</option>
+                            <option value="codex">Codex CLI (OpenAI)</option>
+                            <option value="gemini">Gemini / Antigravity (Google)</option>
+                          </select>
+                        </div>
+                        <div class="popover-group">
+                          <label>Model</label>
+                          <select class="popover-select select-model-picker" data-stage="reviewer" id="quick-select-reviewer-model">
+                            <!-- Populated dynamically -->
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul class="agent-checklist">
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Adversarial inspection of git diff</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Detects regressions & calculation bugs</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>Validates edge cases & safety</span>
+                    </li>
+                    <li>
+                      <span class="check-icon">✓</span>
+                      <span>APPROVED or CHANGES_REQUESTED</span>
+                    </li>
+                  </ul>
+
+                  <div class="agent-card-footer">
+                    <div class="independence-badge badge-green" id="review-independence-badge" title="Independent Review ensures the reviewer is a different AI from the builder">
+                      <span class="badge-icon">✓</span>
+                      <span class="badge-text" id="independence-badge-text">Independent review</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="table-responsive">
-                <table class="events-table" id="events-table">
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>From</th>
-                      <th>To</th>
-                      <th>Event Type</th>
-                      <th>Status</th>
-                      <th>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody id="events-tbody">
-                    <!-- Events populated here -->
-                  </tbody>
-                </table>
+            </section>
+
+            <!-- Recent Runs Section -->
+            <section class="recent-runs-section" id="recent-runs-section" aria-label="Recent Runs">
+              <div class="section-title-row">
+                <h2 class="section-heading">Recent Runs</h2>
+                <button type="button" class="link-view-all" id="btn-view-all-runs">
+                  <span>View all</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- 4 Recent Runs Grid -->
+              <div class="recent-runs-grid" id="recent-runs-grid">
+                <!-- Dynamically rendered via JS -->
+                <div class="recent-run-skeleton"></div>
+                <div class="recent-run-skeleton"></div>
+                <div class="recent-run-skeleton"></div>
+                <div class="recent-run-skeleton"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <!-- VIEW 2: RUN DETAIL VIEW (Full Technical Workstation) -->
+        <!-- ================================================================ -->
+        <section id="run-detail-view" class="view-panel" style="display: none;">
+          <div class="detail-container">
+            <!-- Header Bar with Back Button & Run Meta -->
+            <div class="detail-header-bar">
+              <div class="detail-header-left">
+                <button type="button" class="btn-back-home" id="btn-back-home">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                  </svg>
+                  <span>Home</span>
+                </button>
+                <div class="detail-title-group">
+                  <h2 class="detail-run-title" id="detail-run-title">React Todo App</h2>
+                  <span class="detail-run-id" id="detail-run-id">#018</span>
+                  <span class="detail-status-badge" id="cockpit-status-badge">COMPLETED</span>
+                </div>
+              </div>
+
+              <div class="detail-header-right">
+                <!-- Run Selector Dropdown (Preserved for compatibility) -->
+                <div class="run-selector-dropdown-wrap">
+                  <select id="select-run" class="custom-select-small" aria-label="Select Run">
+                    <option value="run-e2e-001">run-e2e-001</option>
+                  </select>
+                </div>
+
+                <button type="button" id="btn-open-finder" class="btn-detail-action" title="Open Workspace directory in macOS Finder">
+                  <span>📂</span> <span>Open in Finder</span>
+                </button>
+
+                <button type="button" id="btn-view-preview-tab" class="btn-detail-action btn-detail-primary" title="View interactive preview of built app">
+                  <span>🌐</span> <span>Live App Preview</span>
+                </button>
+
+                <button type="button" id="btn-cockpit-retry" class="btn-detail-action btn-detail-retry" style="display: none;">
+                  <span>🔄</span> <span>Retry</span>
+                </button>
+
+                <button type="button" id="btn-cockpit-cancel" class="btn-detail-action btn-detail-cancel" style="display: none;">
+                  <span>🛑</span> <span>Cancel</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Workflow Stage Mini Stepper -->
+            <div class="workflow-stepper-bar" id="cockpit-stepper">
+              <div class="stepper-step active" id="cstep-1">
+                <div class="step-circle">1</div>
+                <span class="step-label">Request</span>
+              </div>
+              <div class="step-divider"></div>
+              <div class="stepper-step" id="cstep-2">
+                <div class="step-circle">2</div>
+                <span class="step-label" id="cstep-2-label">Plan</span>
+              </div>
+              <div class="step-divider"></div>
+              <div class="stepper-step" id="cstep-3">
+                <div class="step-circle">3</div>
+                <span class="step-label" id="cstep-3-label">Build</span>
+              </div>
+              <div class="step-divider"></div>
+              <div class="stepper-step" id="cstep-4">
+                <div class="step-circle">4</div>
+                <span class="step-label" id="cstep-4-label">Review</span>
+              </div>
+              <div class="step-divider"></div>
+              <div class="stepper-step" id="cstep-5">
+                <div class="step-circle">5</div>
+                <span class="step-label" id="cstep-5-label">Audit</span>
+              </div>
+              <div class="step-divider"></div>
+              <div class="stepper-step" id="cstep-6">
+                <div class="step-circle">6</div>
+                <span class="step-label">Verified</span>
+              </div>
+            </div>
+
+            <!-- Alert Banner for BLOCKED / FAILED states -->
+            <div class="cockpit-alert-banner" id="cockpit-alert-banner" style="display: none;">
+              <div class="alert-icon">⚠️</div>
+              <div class="alert-body">
+                <strong id="alert-title">Workflow Blocked</strong>
+                <p id="alert-message">Claude Code subscription authentication is unavailable.</p>
+                <div class="alert-action-snippet" id="alert-snippet-box">
+                  <code id="alert-code-cmd">claude auth login --email haibangtran@gmail.com</code>
+                  <button type="button" id="btn-copy-auth-cmd" class="btn-copy-mini" data-copy-target="alert-code-cmd">📋 Copy</button>
+                </div>
+              </div>
+              <div class="alert-actions-group">
+                <button type="button" id="btn-banner-retry" class="btn-detail-retry">
+                  <span>🔄</span> <span>Retry Claude Review</span>
+                </button>
+                <button type="button" id="btn-banner-fallback" class="btn-detail-action">
+                  <span>🛡️</span> <span>Use Codex Fallback</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Deck Navigation Tabs -->
+            <nav class="detail-tabs-bar" aria-label="Run inspection tabs">
+              <button type="button" class="tab-btn active" data-tab="tab-overview">📊 Overview</button>
+              <button type="button" class="tab-btn" data-tab="tab-preview">🌐 Live App Preview</button>
+              <button type="button" class="tab-btn" data-tab="tab-files">📁 Workspace Files</button>
+              <button type="button" class="tab-btn" data-tab="tab-plan" id="tab-btn-plan">📐 Plan</button>
+              <button type="button" class="tab-btn" data-tab="tab-review" id="tab-btn-review">🛡️ Review</button>
+              <button type="button" class="tab-btn" data-tab="tab-conformance" id="tab-btn-conformance">🎯 Conformance</button>
+              <button type="button" class="tab-btn" data-tab="tab-events">📜 Audit Log</button>
+            </nav>
+
+            <!-- Tab Viewports -->
+            <div class="tab-viewport">
+              <!-- 1. Overview Tab -->
+              <div class="tab-content active" id="tab-overview">
+                <!-- Metrics Grid -->
+                <div class="overview-metrics-grid">
+                  <div class="overview-card">
+                    <span class="card-eyebrow">COLLABORATION STATUS</span>
+                    <h3 class="card-stat-value text-emerald" id="overview-status">COMPLETED</h3>
+                    <span class="card-desc">Autonomous multi-agent workflow completed</span>
+                  </div>
+                  <div class="overview-card">
+                    <span class="card-eyebrow">CLAUDE CODE DECISION</span>
+                    <h3 class="card-stat-value text-purple" id="overview-claude-decision">APPROVED</h3>
+                    <span class="card-desc">Edge cases caught &amp; verified</span>
+                  </div>
+                  <div class="overview-card">
+                    <span class="card-eyebrow">AUTOMATED TESTS</span>
+                    <h3 class="card-stat-value text-blue" id="overview-tests">Passed</h3>
+                    <span class="card-desc">Unit tests &amp; test assertions</span>
+                  </div>
+                  <div class="overview-card">
+                    <span class="card-eyebrow">PRODUCTION BUILD</span>
+                    <h3 class="card-stat-value text-emerald" id="overview-build">Exit Code 0</h3>
+                    <span class="card-desc">Production dist/ verified</span>
+                  </div>
+                </div>
+
+                <!-- 4-Agent Live Status Boxes -->
+                <div class="agents-status-grid" id="cockpit-card">
+                  <div class="agent-stat-box" id="cagent-codex">
+                    <span class="badge-agent codex">CODEX</span>
+                    <span class="stat-role">Planner &amp; Conformance</span>
+                    <span class="stat-live-badge" id="cagent-codex-status">Ready</span>
+                  </div>
+                  <div class="agent-stat-box" id="cagent-gemini">
+                    <span class="badge-agent gemini">GEMINI</span>
+                    <span class="stat-role">Code Construction</span>
+                    <span class="stat-live-badge" id="cagent-gemini-status">Ready</span>
+                  </div>
+                  <div class="agent-stat-box" id="cagent-claude">
+                    <span class="badge-agent claude">CLAUDE</span>
+                    <span class="stat-role">Adversarial Reviewer</span>
+                    <span class="stat-live-badge" id="cagent-claude-status">Ready</span>
+                  </div>
+                  <div class="agent-stat-box" id="cagent-verifier">
+                    <span class="badge-agent verifier">VERIFIER</span>
+                    <span class="stat-role">Test &amp; Build</span>
+                    <span class="stat-live-badge" id="cagent-verifier-status">Ready</span>
+                  </div>
+                </div>
+
+                <!-- Output Paths & Terminal Commands -->
+                <div class="output-paths-container">
+                  <div class="section-sub-header">
+                    <h4>📦 Workspace Paths &amp; Terminal Commands</h4>
+                  </div>
+                  <div class="paths-boxes-row">
+                    <div class="path-box">
+                      <div class="path-box-header">
+                        <span>📁 Workspace Directory</span>
+                        <button type="button" class="btn-copy-mini" data-copy-target="output-workspace-path">📋 Copy</button>
+                      </div>
+                      <code id="output-workspace-path">Loading...</code>
+                    </div>
+                    <div class="path-box">
+                      <div class="path-box-header">
+                        <span>⚡ Production Dist</span>
+                        <button type="button" class="btn-copy-mini" data-copy-target="output-dist-path">📋 Copy</button>
+                      </div>
+                      <code id="output-dist-path">Loading...</code>
+                    </div>
+                  </div>
+
+                  <div class="commands-grid">
+                    <div class="cmd-card">
+                      <div class="cmd-meta">
+                        <span class="cmd-tag">1. Preview Build</span>
+                        <button type="button" class="btn-copy-mini" data-copy-target="cmd-preview">📋 Copy</button>
+                      </div>
+                      <code id="cmd-preview">npm run preview</code>
+                    </div>
+                    <div class="cmd-card">
+                      <div class="cmd-meta">
+                        <span class="cmd-tag">2. Dev Server</span>
+                        <button type="button" class="btn-copy-mini" data-copy-target="cmd-dev">📋 Copy</button>
+                      </div>
+                      <code id="cmd-dev">npm run dev</code>
+                    </div>
+                    <div class="cmd-card">
+                      <div class="cmd-meta">
+                        <span class="cmd-tag">3. Run Unit Tests</span>
+                        <button type="button" class="btn-copy-mini" data-copy-target="cmd-test">📋 Copy</button>
+                      </div>
+                      <code id="cmd-test">npm test</code>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Live Feed in Overview -->
+                <div class="cockpit-feed-wrap">
+                  <div class="feed-header-row">
+                    <span class="feed-title">📡 Real-Time Activity Log</span>
+                    <span class="feed-live-indicator" id="feed-status-pulse">● LIVE</span>
+                  </div>
+                  <div class="feed-scroll-box" id="cockpit-feed-logs">
+                    <div class="feed-empty">No activity events recorded.</div>
+                  </div>
+                </div>
+
+                <!-- Traceability -->
+                <div class="traceability-wrap">
+                  <h4>Collaborating Agent Traceability</h4>
+                  <div class="traceability-list" id="traceability-list"></div>
+                </div>
+              </div>
+
+              <!-- 2. Preview Tab -->
+              <div class="tab-content" id="tab-preview">
+                <div class="preview-toolbar">
+                  <div class="preview-toolbar-left">
+                    <div class="device-toggles">
+                      <button type="button" class="btn-device active" data-width="100%">Desktop</button>
+                      <button type="button" class="btn-device" data-width="768px">Tablet (768px)</button>
+                      <button type="button" class="btn-device" data-width="375px">Mobile (375px)</button>
+                    </div>
+                    <span class="preview-url-badge" id="preview-url-display">/preview/...</span>
+                  </div>
+                  <div class="preview-toolbar-right">
+                    <button type="button" id="btn-reload-preview" class="btn-detail-action">
+                      <span>🔄</span> <span>Reload</span>
+                    </button>
+                    <a href="#" target="_blank" class="btn-detail-action" id="preview-external-link">
+                      <span>Open in New Tab ↗</span>
+                    </a>
+                    <a id="btn-open-preview-external" href="#" target="_blank" style="display: none;"></a>
+                  </div>
+                </div>
+                <div class="preview-iframe-wrapper">
+                  <iframe src="about:blank" id="preview-iframe" title="Application Preview"></iframe>
+                </div>
+              </div>
+
+              <!-- 3. Workspace Files Tab -->
+              <div class="tab-content" id="tab-files">
+                <div class="files-explorer-shell">
+                  <div class="files-toolbar">
+                    <div class="files-toolbar-left">
+                      <span class="files-title">Workspace Explorer</span>
+                      <span class="files-count-badge" id="files-count-badge">0 files</span>
+                      <span class="files-path-text" id="files-root-path">...</span>
+                    </div>
+                    <div class="files-toolbar-right">
+                      <button type="button" id="btn-refresh-files" class="btn-detail-action">🔄 Refresh</button>
+                      <button type="button" id="btn-copy-active-file" class="btn-detail-action">📋 Copy Code</button>
+                      <button type="button" id="btn-files-open-finder" class="btn-detail-action">📂 Finder</button>
+                    </div>
+                  </div>
+                  <div class="files-main-layout">
+                    <div class="files-sidebar">
+                      <div class="files-search-box">
+                        <input type="text" id="files-search-input" placeholder="🔍 Search files (e.g. App.jsx)..." />
+                      </div>
+                      <ul class="files-tree-list" id="files-tree-list">
+                        <li class="files-empty-item">Loading files...</li>
+                      </ul>
+                    </div>
+                    <div class="files-viewer-panel">
+                      <div class="file-viewer-header">
+                        <span class="file-viewer-active-name" id="file-active-name">No file selected</span>
+                        <span class="file-viewer-size" id="file-active-size"></span>
+                      </div>
+                      <div class="file-viewer-body">
+                        <pre><code class="file-code-display" id="file-code-display">// Select a file from the list on the left to inspect its code.</code></pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. Plan Tab -->
+              <div class="tab-content" id="tab-plan">
+                <div class="card-section">
+                  <div class="sub-header">
+                    <h3 id="plan-section-title">Architecture &amp; Implementation Plan</h3>
+                    <span class="badge-role" id="plan-role-badge">Planner</span>
+                  </div>
+                  <div id="plan-container" class="plan-display"></div>
+                </div>
+              </div>
+
+              <!-- 5. Review Tab -->
+              <div class="tab-content" id="tab-review">
+                <div class="card-section">
+                  <div class="sub-header">
+                    <h3 id="review-section-title">Adversarial Code Review</h3>
+                    <span class="badge-role badge-purple" id="review-role-badge">Reviewer</span>
+                  </div>
+                  <div class="review-round-selector" id="review-round-selector">
+                    <button type="button" class="round-btn" data-round="1">Round 1</button>
+                    <button type="button" class="round-btn" data-round="2">Round 2</button>
+                    <button type="button" class="round-btn active" data-round="3">Round 3 (APPROVED 🎉)</button>
+                  </div>
+                  <div id="review-container" class="review-display"></div>
+                </div>
+              </div>
+
+              <!-- 6. Conformance Tab -->
+              <div class="tab-content" id="tab-conformance">
+                <div class="card-section">
+                  <div class="sub-header">
+                    <h3 id="conformance-section-title">Plan-Conformance Check</h3>
+                    <span class="badge-role" id="conformance-role-badge">Final Check</span>
+                  </div>
+                  <div id="conformance-container" class="conformance-display"></div>
+                </div>
+              </div>
+
+              <!-- 7. Audit Tab -->
+              <div class="tab-content" id="tab-events">
+                <div class="card-section">
+                  <div class="sub-header">
+                    <h3>Inter-Agent Protocol Audit Stream (events.jsonl)</h3>
+                    <span class="badge-role badge-cyan">Zero-Data-Loss Audit Log</span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="events-table" id="events-table">
+                      <thead>
+                        <tr>
+                          <th>Time</th>
+                          <th>From</th>
+                          <th>To</th>
+                          <th>Event Type</th>
+                          <th>Status</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody id="events-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   </div>
 
+  <!-- ================================================================ -->
+  <!-- SETTINGS DRAWER (Model Selectors & Fallback Controls) -->
+  <!-- ================================================================ -->
+  <div class="drawer-overlay" id="drawer-overlay" aria-hidden="true"></div>
+  <aside class="settings-drawer" id="settings-drawer" aria-label="AI Team Settings">
+    <div class="drawer-header">
+      <div class="drawer-title-row">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <h3>AI Team Settings</h3>
+      </div>
+      <button type="button" class="drawer-close-btn" id="btn-close-settings" aria-label="Close settings">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Section 0: Team Preset -->
+      <div class="drawer-group">
+        <div class="group-header">
+          <span class="group-tag preset">PRESET</span>
+          <h4>Team Configuration Preset</h4>
+        </div>
+        <div class="form-field">
+          <label for="select-team-preset">Quick Team Preset</label>
+          <select id="select-team-preset" class="custom-select">
+            <option value="recommended">Recommended (Balanced) · Codex -> Gemini -> Claude</option>
+            <option value="all_gemini">All Gemini · Full Google Gemini 3.8 Pipeline</option>
+            <option value="fast">Fast Delivery · Gemini -> Gemini -> Claude Haiku</option>
+            <option value="deep_review">Deep Adversarial · Codex -> Gemini -> Claude Opus</option>
+            <option value="custom">Custom Assignment</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 1: Planner Role -->
+      <div class="drawer-group">
+        <div class="group-header">
+          <span class="group-tag codex">01 PLANNER</span>
+          <h4>Planning &amp; Architecture Agent</h4>
+        </div>
+        <div class="form-field">
+          <label for="select-planner-agent">Assigned Agent</label>
+          <select id="select-planner-agent" class="custom-select">
+            <option value="codex">OpenAI Codex CLI</option>
+            <option value="gemini">Google Antigravity / Gemini</option>
+            <option value="claude">Anthropic Claude Code CLI</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="select-planner-model">Planner Model</label>
+          <select id="select-planner-model" class="custom-select">
+            <option value="gpt-6-astra">GPT-6 Astra (Default · Architecture)</option>
+          </select>
+          <!-- Hidden legacy select for backward compat -->
+          <select id="select-codex-model" style="display:none;"></select>
+        </div>
+        <div class="form-field">
+          <label for="segment-reasoning">Reasoning Effort</label>
+          <div class="segment-group" id="segment-reasoning">
+            <button type="button" class="segment-btn active" data-value="low">Low</button>
+            <button type="button" class="segment-btn" data-value="medium">Medium</button>
+            <button type="button" class="segment-btn" data-value="high">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Builder Role -->
+      <div class="drawer-group">
+        <div class="group-header">
+          <span class="group-tag gemini">02 BUILDER</span>
+          <h4>Code Construction &amp; Execution Agent</h4>
+        </div>
+        <div class="form-field">
+          <label for="select-builder-agent">Assigned Agent</label>
+          <select id="select-builder-agent" class="custom-select">
+            <option value="gemini">Google Antigravity / Gemini</option>
+            <option value="codex">OpenAI Codex CLI</option>
+            <option value="claude">Anthropic Claude Code CLI</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="select-builder-model">Builder Model</label>
+          <select id="select-builder-model" class="custom-select">
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
+          </select>
+          <!-- Hidden legacy select for backward compat -->
+          <select id="select-gemini-model" style="display:none;"></select>
+        </div>
+      </div>
+
+      <!-- Section 3: Reviewer Role -->
+      <div class="drawer-group">
+        <div class="group-header">
+          <span class="group-tag claude">03 REVIEWER</span>
+          <h4>Independent Adversarial Reviewer</h4>
+        </div>
+        <div class="form-field">
+          <label for="select-reviewer-agent">Assigned Agent</label>
+          <select id="select-reviewer-agent" class="custom-select">
+            <option value="claude">Anthropic Claude Code CLI</option>
+            <option value="codex">OpenAI Codex CLI</option>
+            <option value="gemini">Google Antigravity / Gemini</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="select-reviewer-model">Reviewer Model</label>
+          <select id="select-reviewer-model" class="custom-select">
+            <option value="claude-sonnet-5">Sonnet 5 (Default)</option>
+          </select>
+          <!-- Hidden legacy select for backward compat -->
+          <select id="select-claude-model" style="display:none;"></select>
+        </div>
+        <div class="form-field checkbox-field">
+          <input type="checkbox" id="check-reviewer-fallback" checked>
+          <label for="check-reviewer-fallback">
+            <strong>Auto Reviewer Fallback</strong>
+            <span>Switch to secondary review agent if primary is unavailable</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Section 4: Advanced Roles (Fixer & Final Checker) -->
+      <details class="drawer-group drawer-details">
+        <summary class="details-summary">
+          <span>⚙️ Advanced Role Routing (Fixer &amp; Conformance)</span>
+        </summary>
+        <div class="details-content" style="padding-top: 14px;">
+          <div class="form-field">
+            <label for="select-fixer-agent">04 Code Repair Agent (Fixer)</label>
+            <select id="select-fixer-agent" class="custom-select">
+              <option value="auto">Auto: Same as Builder (Recommended)</option>
+              <option value="gemini">Gemini / Antigravity</option>
+              <option value="codex">Codex CLI</option>
+              <option value="claude">Claude Code CLI</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="select-finalcheck-agent">05 Plan Conformance Agent (Final Checker)</label>
+            <select id="select-finalcheck-agent" class="custom-select">
+              <option value="auto">Auto: Same as Planner (Recommended)</option>
+              <option value="codex">Codex CLI</option>
+              <option value="gemini">Gemini / Antigravity</option>
+              <option value="claude">Claude Code CLI</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 4: Diagnostics -->
+      <div class="drawer-group">
+        <h4>Health Diagnostics</h4>
+        <div class="diag-status-row">
+          <div class="diag-item">
+            <span>Codex CLI</span>
+            <span class="diag-badge" id="display-codex-model">GPT-6 Astra</span>
+          </div>
+          <div class="diag-item">
+            <span>Gemini IDE</span>
+            <span class="diag-badge" id="display-gemini-model">Gemini 3.8 Flash</span>
+          </div>
+          <div class="diag-item">
+            <span>Claude Code</span>
+            <span class="diag-badge" id="display-claude-model">Sonnet 5</span>
+          </div>
+        </div>
+        <button type="button" class="btn-full-probe" id="btn-reprobe-status">
+          <span>🔄</span> <span>Re-probe All Agent Connections</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================================================================ -->
+  <!-- AGENTS MODAL (For "Agents" navigation) -->
+  <!-- ================================================================ -->
+  <div class="modal-backdrop" id="agents-modal-backdrop" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>AI Agent Cluster Status</h3>
+        <button type="button" class="modal-close" id="btn-close-agents-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="agent-cluster-grid">
+          <div class="cluster-agent-box" id="chip-codex">
+            <div class="agent-box-top">
+              <span class="status-indicator online"></span>
+              <strong>Codex CLI</strong>
+            </div>
+            <p>Strategic architecture planner. Generates plan.json and verifies conformance.</p>
+            <span class="model-pill">Default: GPT-6 Astra</span>
+          </div>
+          <div class="cluster-agent-box" id="chip-gemini">
+            <div class="agent-box-top">
+              <span class="status-indicator online pulse"></span>
+              <strong>Gemini 3.8</strong>
+            </div>
+            <p>Full-stack executor. Writes code, executes Vitest, and handles build packaging.</p>
+            <span class="model-pill">Default: Gemini 3.8 Flash</span>
+          </div>
+          <div class="cluster-agent-box" id="chip-claude">
+            <div class="agent-box-top">
+              <span class="status-indicator online" id="modal-claude-indicator"></span>
+              <strong>Claude Code CLI</strong>
+            </div>
+            <p>Adversarial code reviewer. Validates security, edge cases, and architectural integrity.</p>
+            <span class="model-pill" id="modal-claude-badge">Claude Pro</span>
+            <button type="button" class="btn-mini-recheck" id="btn-modal-recheck-claude">Verify / Recheck Auth</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ================================================================ -->
+  <!-- DOCUMENTATION MODAL (Rich In-App Documentation Viewer) -->
+  <!-- ================================================================ -->
+  <div class="modal-backdrop" id="docs-modal-backdrop" style="display: none;">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-row">
+            <span class="group-tag preset">DOCUMENTATION</span>
+            <span class="version-tag">v0.1.0</span>
+          </div>
+          <h3>📘 AI Team Architecture &amp; Developer Guide</h3>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-docs-modal">&times;</button>
+      </div>
+
+      <!-- Docs Navigation Tabs -->
+      <div class="docs-tabs-nav">
+        <button type="button" class="docs-tab-btn active" data-docs-tab="docs-tab-overview">⚡ Workflow Architecture</button>
+        <button type="button" class="docs-tab-btn" data-docs-tab="docs-tab-routing">🔀 Model-Agnostic Routing</button>
+        <button type="button" class="docs-tab-btn" data-docs-tab="docs-tab-cli">💻 CLI &amp; API Reference</button>
+        <button type="button" class="docs-tab-btn" data-docs-tab="docs-tab-troubleshoot">🛠️ Troubleshooting &amp; Auth</button>
+      </div>
+
+      <div class="modal-body docs-modal-body">
+        <!-- 1. Overview Tab -->
+        <div class="docs-tab-content active" id="docs-tab-overview">
+          <div class="docs-section">
+            <h4>1. Autonomous 3-Stage Orchestration</h4>
+            <p><strong>AI Team</strong> executes real software projects through a collaborative, adversarial loop where multiple autonomous AI agents fulfill specialized roles:</p>
+            <div class="docs-steps-grid">
+              <div class="docs-step-card">
+                <div class="step-num">01</div>
+                <strong>PLAN</strong>
+                <p>Analyzes requirements, inspects project constraints, designs modular architecture, and outputs a structured <code>plan.json</code> schema.</p>
+              </div>
+              <div class="docs-step-card">
+                <div class="step-num">02</div>
+                <strong>BUILD</strong>
+                <p>Initializes the workspace, installs dependencies, writes full production code, and builds automated test suites.</p>
+              </div>
+              <div class="docs-step-card">
+                <div class="step-num">03</div>
+                <strong>REVIEW</strong>
+                <p>Independent, adversarial inspection of the Git diff. Detects regressions, logic bugs, edge cases, and issues <code>APPROVED</code> or <code>CHANGES_REQUESTED</code>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="docs-section">
+            <h4>2. Zero-Data-Loss Inter-Agent Protocol</h4>
+            <p>Every decision, file write, review comment, and terminal command is recorded in an immutable append-only event stream (<code>events.jsonl</code>) within the run workspace. No state is lost across agent transitions.</p>
+          </div>
+        </div>
+
+        <!-- 2. Routing Tab -->
+        <div class="docs-tab-content" id="docs-tab-routing">
+          <div class="docs-section">
+            <h4>1. Model-Agnostic Routing Principle</h4>
+            <p>Stages are decoupled from specific AI vendors. You can freely assign any agent and any underlying model to any workflow stage:</p>
+            <ul class="docs-list">
+              <li><strong>Planner:</strong> Codex CLI (GPT-6 Astra), Gemini 3.8, or Claude Code CLI.</li>
+              <li><strong>Builder:</strong> Gemini 3.8 Flash, Codex CLI, or Claude Code CLI.</li>
+              <li><strong>Reviewer:</strong> Claude Code (Sonnet 5 / Opus 4), Codex CLI, or Gemini 3.8.</li>
+              <li><strong>Fixer &amp; Final Checker:</strong> Can auto-track Builder/Planner or be independently customized.</li>
+            </ul>
+          </div>
+          <div class="docs-section">
+            <h4>2. Built-in Team Presets</h4>
+            <div class="docs-table-wrap">
+              <table class="docs-table">
+                <thead>
+                  <tr>
+                    <th>Preset</th>
+                    <th>Planner</th>
+                    <th>Builder</th>
+                    <th>Reviewer</th>
+                    <th>Ideal For</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Recommended</strong></td>
+                    <td>Codex · GPT-6 Astra</td>
+                    <td>Gemini · 3.8 Flash</td>
+                    <td>Claude · Sonnet 5</td>
+                    <td>Full-stack production apps, balance of speed &amp; quality.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Fast Delivery</strong></td>
+                    <td>Gemini · 3.8 Flash</td>
+                    <td>Gemini · 3.8 Flash</td>
+                    <td>Claude · 3.5 Haiku</td>
+                    <td>Rapid prototyping, MVPs, quick scripts.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Deep Adversarial</strong></td>
+                    <td>Codex · GPT-6 Astra</td>
+                    <td>Gemini · 3.8 Flash</td>
+                    <td>Claude · Opus 4</td>
+                    <td>Mission-critical systems, security auditing, complex algorithms.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. CLI & API Tab -->
+        <div class="docs-tab-content" id="docs-tab-cli">
+          <div class="docs-section">
+            <h4>1. Command-Line Interface (CLI)</h4>
+            <p>You can run autonomous team collaborations directly from your terminal:</p>
+            <pre class="docs-code-block"><code># Start an autonomous run with default routing
+npx tsx cli.ts --prompt "Build a responsive Markdown editor with live preview"
+
+# Custom stage assignment
+npx tsx cli.ts --prompt "Create a REST API" --planner gemini --builder gemini --reviewer claude</code></pre>
+          </div>
+          <div class="docs-section">
+            <h4>2. REST API Endpoints</h4>
+            <div class="docs-table-wrap">
+              <table class="docs-table">
+                <thead>
+                  <tr>
+                    <th>Method &amp; Path</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>POST /api/runs</code></td>
+                    <td>Initiates a new autonomous workflow run with user prompt &amp; routing config.</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /api/runs/:id</code></td>
+                    <td>Fetches detailed run state, review rounds, plan, and build status.</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /api/runs/:id/stream</code></td>
+                    <td>Server-Sent Events (SSE) live stream for real-time progress and logs.</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /api/status</code></td>
+                    <td>Probes readiness and CLI login status for Codex, Gemini, and Claude.</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /api/models</code></td>
+                    <td>Returns available agent models and metadata.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Troubleshooting Tab -->
+        <div class="docs-tab-content" id="docs-tab-troubleshoot">
+          <div class="docs-section">
+            <h4>1. Claude Code CLI Authentication</h4>
+            <p>If Claude Code shows <em>Blocked</em> or <em>Auth Unavailable</em>, run the login command in your terminal:</p>
+            <pre class="docs-code-block"><code>claude auth login --email your_email@example.com</code></pre>
+            <p>Once completed, click <strong>Verify / Recheck Auth</strong> in the Agent Cluster dialog or click the status footer in the sidebar.</p>
+          </div>
+          <div class="docs-section">
+            <h4>2. Automatic Fallback Mechanism</h4>
+            <p>When <strong>Auto Reviewer Fallback</strong> is enabled in Settings, the orchestrator automatically reroutes the review stage to OpenAI Codex if Claude Code is blocked or hits a rate limit, ensuring unbroken execution.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

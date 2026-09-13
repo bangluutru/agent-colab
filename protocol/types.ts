@@ -1,5 +1,6 @@
 /**
- * Protocol Types for Agent Collaboration MVP v0.1
+ * Protocol Types for Agent Collaboration Platform
+ * Model-Agnostic Workflow Routing Architecture
  */
 
 export type WorkflowState =
@@ -22,6 +23,7 @@ export type WorkflowState =
 
 export type EventType =
   | 'USER_REQUEST_RECEIVED'
+  | 'ROUTING_CONFIGURED'
   | 'PLAN_REQUESTED'
   | 'PLAN_RECEIVED'
   | 'IMPLEMENTATION_STARTED'
@@ -47,6 +49,160 @@ export type EventType =
   | 'WORKFLOW_FAILED'
   | 'WORKFLOW_INTERRUPTED';
 
+// ============================================================================
+// Model-Agnostic Workflow Architecture Types
+// ============================================================================
+
+export type AgentId = 'codex' | 'gemini' | 'claude';
+
+export type WorkflowRole =
+  | 'planner'
+  | 'builder'
+  | 'reviewer'
+  | 'fixer'
+  | 'final_checker'
+  | 'verifier';
+
+export type WorkflowStage =
+  | 'PLANNING'
+  | 'IMPLEMENTING'
+  | 'IMPLEMENTATION'
+  | 'REVIEWING'
+  | 'REVIEW'
+  | 'FIXING'
+  | 'FIX'
+  | 'FINAL_CHECK'
+  | 'VERIFYING';
+
+export interface AgentCapabilities {
+  planning?: boolean;
+  implementation?: boolean;
+  review?: boolean;
+  fileEditing?: boolean;
+  commandExecution?: boolean;
+  structuredOutput?: boolean;
+  supportsPlanning?: boolean;
+  supportsImplementation?: boolean;
+  supportsReview?: boolean;
+  supportsFix?: boolean;
+  supportsFinalCheck?: boolean;
+  canWriteWorkspace?: boolean;
+  canExecuteCommands?: boolean;
+  availableModels?: string[];
+  defaultModel?: string;
+}
+
+export interface RoleAssignment {
+  agent: AgentId;
+  model: string;
+  reasoningEffort?: 'low' | 'medium' | 'high';
+}
+
+export interface WorkflowRoutingConfig {
+  preset?: string;
+  planner?: RoleAssignment;
+  builder?: RoleAssignment;
+  reviewer?: RoleAssignment | {
+    primary?: RoleAssignment;
+    fallback?: RoleAssignment;
+    agent?: AgentId;
+    model?: string;
+  };
+  fixer?: RoleAssignment | {
+    mode?: 'same_as_builder' | 'custom';
+    assignment?: RoleAssignment;
+    agent?: AgentId;
+    model?: string;
+  };
+  finalChecker?: RoleAssignment | {
+    mode?: 'same_as_planner' | 'custom';
+    assignment?: RoleAssignment;
+    agent?: AgentId;
+    model?: string;
+  };
+  final_checker?: RoleAssignment | {
+    mode?: 'same_as_planner' | 'custom';
+    assignment?: RoleAssignment;
+    agent?: AgentId;
+    model?: string;
+  };
+}
+
+export interface ResolvedWorkflowRouting {
+  preset?: string;
+  planner: RoleAssignment;
+  builder: RoleAssignment;
+  reviewer: RoleAssignment;
+  fixer: RoleAssignment;
+  finalChecker: RoleAssignment;
+  final_checker?: RoleAssignment;
+  isIndependentReview?: boolean;
+  independenceWarning?: string | null;
+}
+
+export interface StageContext {
+  runId?: string;
+  workspacePath?: string;
+  userRequest?: string;
+  role?: WorkflowRole;
+  assignment?: RoleAssignment;
+  prompt?: string;
+  plan?: Record<string, unknown>;
+  gitDiff?: string;
+  testResults?: string;
+  reviewRound?: number;
+  issues?: string[];
+  sourceFiles?: Record<string, string>;
+  metadata?: Record<string, unknown>;
+  options?: Record<string, unknown>;
+  models?: ModelSelectionConfig | Record<string, unknown>;
+}
+
+export interface AgentExecutionRequest {
+  id?: string;
+  runId: string;
+  stage: WorkflowStage;
+  role: WorkflowRole;
+  model: string;
+  workspacePath: string;
+  prompt: string;
+  systemPrompt?: string;
+  context: StageContext;
+  timeoutMs?: number;
+  reasoningEffort?: 'low' | 'medium' | 'high';
+  readOnly?: boolean;
+  expectedSchema?: 'planning' | 'review' | 'final_check' | 'none';
+}
+
+export interface AgentExecutionResult {
+  agent?: AgentId;
+  agentId: AgentId;
+  model?: string;
+  modelUsed: string;
+  stage: WorkflowStage;
+  role: WorkflowRole;
+  success: boolean;
+  output?: unknown;
+  structuredOutput?: any;
+  rawOutput?: string;
+  durationMs: number;
+  tokensUsed?: number;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TeamPreset {
+  id: string;
+  name: string;
+  description: string;
+  badge?: string;
+  routing: WorkflowRoutingConfig;
+}
+
+// ============================================================================
+// Events & Telemetry
+// ============================================================================
+
 export interface WorkflowEvent {
   timestamp: string;
   run_id: string;
@@ -54,8 +210,15 @@ export interface WorkflowEvent {
   to: 'user' | 'orchestrator' | 'codex' | 'gemini' | 'claude' | 'system' | 'all';
   type: EventType;
   status: 'sent' | 'received' | 'processing' | 'success' | 'failed' | 'blocked' | 'warning' | 'info';
+  role?: WorkflowRole;
+  agent?: AgentId;
+  model?: string;
   data?: Record<string, unknown>;
 }
+
+// ============================================================================
+// Legacy & Adapter Types (Maintained for Backward Compatibility)
+// ============================================================================
 
 export interface ModelOption {
   id: string;
@@ -67,11 +230,12 @@ export interface ModelOption {
 }
 
 export interface ModelSelectionConfig {
-  codexModel?: string;    // e.g. "gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"
-  claudeModel?: string;   // e.g. "opus", "sonnet", "haiku", "fable-5.1", "claude-fable-5", "claude-opus-4-8"
-  geminiModel?: string;   // e.g. "gemini-3.8-flash", "gemini-3.7-flash", "claude-sonnet-4-6-thinking"
+  codexModel?: string;
+  claudeModel?: string;
+  geminiModel?: string;
   reasoningEffort?: 'low' | 'medium' | 'high';
-  reviewerFallback?: boolean; // When true, automatically switch to Codex if Claude CLI fails/unauthorized
+  reviewerFallback?: boolean;
+  routing?: WorkflowRoutingConfig;
 }
 
 export interface AgentTask {

@@ -9,8 +9,13 @@ import {
   AgentDetectionResult,
   AgentStatus,
   ModelSelectionConfig,
+  AgentCapabilities,
+  AgentExecutionRequest,
+  AgentExecutionResult,
+  AgentId,
 } from '../../protocol/types.js';
 import { ClaudeParser } from './parser.js';
+import { CodexParser } from '../codex/parser.js';
 
 export type ClaudeErrorKind =
   | 'AUTH_REQUIRED'
@@ -158,13 +163,13 @@ export function classifyClaudeError(
 }
 
 export class ClaudeAdapter implements AgentAdapter {
-  public id = 'claude';
+  public id: AgentId = 'claude';
   public name = 'Claude Code CLI';
   private defaultModel: string;
   private claudeBinary: string;
   private activeProcess: any = null;
   private detectionCache: { result: AgentDetectionResult; timestamp: number } | null = null;
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minute cache (Section 13)
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minute cache
 
   public cancel(): void {
     if (this.activeProcess) {
@@ -181,6 +186,20 @@ export class ClaudeAdapter implements AgentAdapter {
 
   public invalidateCache(): void {
     this.detectionCache = null;
+  }
+
+  public getCapabilities(): AgentCapabilities {
+    return {
+      supportsPlanning: true,
+      supportsImplementation: true,
+      supportsReview: true,
+      supportsFix: true,
+      supportsFinalCheck: true,
+      canWriteWorkspace: true,
+      canExecuteCommands: true,
+      availableModels: ['claude-sonnet-5', 'claude-opus-5', 'haiku'],
+      defaultModel: 'claude-sonnet-5',
+    };
   }
 
   public static normalizeModelSlug(model?: string): string {
@@ -206,7 +225,6 @@ export class ClaudeAdapter implements AgentAdapter {
 
   constructor(config?: ModelSelectionConfig) {
     this.claudeBinary = resolveCanonicalClaudeBinary();
-    // Default reviewer model: claude-sonnet-5 (Section 16)
     this.defaultModel = ClaudeAdapter.normalizeModelSlug(config?.claudeModel || 'claude-sonnet-5');
   }
 
@@ -214,10 +232,6 @@ export class ClaudeAdapter implements AgentAdapter {
     return this.claudeBinary;
   }
 
-  /**
-   * Unified lower-level process launcher (Section 12)
-   * Shared by --version, auth status, probe, and actual reviews.
-   */
   public runClaudeProcess(
     args: string[],
     options?: { timeoutMs?: number; cwd?: string }
@@ -280,12 +294,6 @@ export class ClaudeAdapter implements AgentAdapter {
     });
   }
 
-  /**
-   * 3-Level Readiness Detection (Section 2 & 13)
-   * LEVEL 1: binary exists
-   * LEVEL 2: auth status says logged in
-   * LEVEL 3: real headless inference probe succeeds
-   */
   public async detect(forceRefresh: boolean = false): Promise<AgentDetectionResult> {
     if (!forceRefresh && this.detectionCache && Date.now() - this.detectionCache.timestamp < this.CACHE_TTL_MS) {
       return this.detectionCache.result;
@@ -323,7 +331,7 @@ export class ClaudeAdapter implements AgentAdapter {
       return result;
     }
 
-    // LEVEL 3: Real Headless Inference Probe (Section 2 & 13)
+    // LEVEL 3: Real Headless Inference Probe
     const probeRes = await this.runClaudeProcess(
       ['-p', '--model', 'claude-sonnet-5', 'Reply with exactly: CLAUDE_PROBE_OK'],
       { timeoutMs: 15000 }
@@ -374,31 +382,27 @@ export class ClaudeAdapter implements AgentAdapter {
     };
   }
 
-  /**
-   * Persist raw process execution diagnostics (Section 15)
-   */
   private saveDiagnosticLog(
-    task: AgentTask,
-    context: AgentContext,
+    request: AgentExecutionRequest,
     model: string,
     processRes: ClaudeProcessResult
   ): void {
     try {
-      const runId = context.runId || 'latest';
-      const runsDir = path.resolve(process.cwd(), 'runs', runId, 'diagnostics');
+      const runsDir = path.resolve(process.cwd(), 'runs', 'latest', 'diagnostics');
       fs.mkdirSync(runsDir, { recursive: true });
 
       const diagFile = path.join(
         runsDir,
-        `claude-${task.type}-${Date.now()}-process.json`
+        `claude-${request.stage.toLowerCase()}-${Date.now()}-process.json`
       );
 
       const diagnosticData = {
         timestamp: new Date().toISOString(),
-        taskType: task.type,
+        role: request.role,
+        stage: request.stage,
         binary: this.claudeBinary,
         model,
-        cwd: context.workspacePath || process.cwd(),
+        cwd: request.workspacePath || process.cwd(),
         exitCode: processRes.exitCode,
         durationMs: processRes.durationMs,
         stdout: processRes.stdout,
@@ -418,78 +422,181 @@ export class ClaudeAdapter implements AgentAdapter {
     }
   }
 
-  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
-    let modelToUse = ClaudeAdapter.normalizeModelSlug(task.modelOverride || this.defaultModel);
-    const timeout = task.timeoutMs || 180000; // 180s default timeout for deep review
+  /**
+   * Model-Agnostic Stage Execution
+   */
+  public async executeStage(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
+    let modelToUse = ClaudeAdapter.normalizeModelSlug(request.model || this.defaultModel);
+    const isWriteRole = request.role === 'builder' || request.role === 'fixer' || (request.role as any) === 'BUILDER' || (request.role as any) === 'FIXER' || request.stage === 'IMPLEMENTATION' || request.stage === 'IMPLEMENTING' || request.stage === 'FIX' || request.stage === 'FIXING';
+    const readOnly = request.readOnly !== undefined ? request.readOnly : !isWriteRole;
+    const timeout = request.timeoutMs || (readOnly ? 180000 : 15 * 60 * 1000);
 
-    const fullPrompt = `${task.systemPrompt ? task.systemPrompt + '\n\n' : ''}${task.prompt}`;
-    const buildArgs = (m: string) => ['-p', '--model', m, fullPrompt];
+    const fullPrompt = `${request.systemPrompt ? request.systemPrompt + '\n\n' : ''}${request.prompt}`;
 
-    // Primary execution attempt
+    const buildArgs = (m: string) => {
+      const args = ['-p'];
+      if (!readOnly) {
+        args.push('--dangerously-skip-permissions');
+      }
+      args.push('--model', m, fullPrompt);
+      return args;
+    };
+
     let procRes = await this.runClaudeProcess(buildArgs(modelToUse), {
       timeoutMs: timeout,
-      cwd: context.workspacePath,
+      cwd: request.workspacePath,
     });
 
-    this.saveDiagnosticLog(task, context, modelToUse, procRes);
+    this.saveDiagnosticLog(request, modelToUse, procRes);
 
-    // Section 17: Automatic model fallback from Opus to Sonnet if specifically MODEL_UNAVAILABLE
+    // Automatic model fallback from Opus to Sonnet if MODEL_UNAVAILABLE
     if (procRes.exitCode !== 0) {
       const classification = classifyClaudeError(procRes.exitCode, procRes.stdout, procRes.stderr);
-
       if (classification.kind === 'MODEL_UNAVAILABLE' && modelToUse === 'claude-opus-5') {
         console.warn(`[CLAUDE] Model ${modelToUse} unavailable. Retrying with claude-sonnet-5...`);
         modelToUse = 'claude-sonnet-5';
         procRes = await this.runClaudeProcess(buildArgs(modelToUse), {
           timeoutMs: timeout,
-          cwd: context.workspacePath,
+          cwd: request.workspacePath,
         });
-        this.saveDiagnosticLog(task, context, modelToUse, procRes);
+        this.saveDiagnosticLog(request, modelToUse, procRes);
       }
     }
 
-    // Process output or handle failure
     if (procRes.exitCode !== 0) {
       const classified = classifyClaudeError(procRes.exitCode, procRes.stdout, procRes.stderr);
       return {
         success: false,
         agentId: this.id,
         modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
         rawOutput: procRes.stdout,
         durationMs: procRes.durationMs,
         error: `${classified.message} ${classified.userAction || ''}`.trim(),
       };
     }
 
-    if (task.type === 'review') {
-      const parsed = ClaudeParser.parseReview(procRes.stdout);
-      if (parsed.success) {
-        return {
-          success: true,
-          agentId: this.id,
-          modelUsed: modelToUse,
-          rawOutput: procRes.stdout,
-          structuredOutput: parsed.data,
-          durationMs: procRes.durationMs,
-        };
-      } else {
-        return {
-          success: false,
-          agentId: this.id,
-          modelUsed: modelToUse,
-          rawOutput: procRes.stdout,
-          durationMs: procRes.durationMs,
-          error: parsed.error,
-        };
-      }
+    const expectedSchema = request.expectedSchema || (
+      request.stage === 'PLANNING' ? 'planning' :
+      request.stage === 'REVIEW' ? 'review' :
+      request.stage === 'FINAL_CHECK' ? 'final_check' : 'none'
+    );
+
+    if (expectedSchema === 'planning') {
+      const planRes = CodexParser.parsePlan(procRes.stdout);
+      return {
+        success: planRes.success,
+        agent: 'claude',
+        agentId: this.id,
+        model: modelToUse,
+        modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
+        output: planRes.success ? planRes.data : undefined,
+        rawOutput: procRes.stdout,
+        structuredOutput: planRes.success ? planRes.data : undefined,
+        durationMs: procRes.durationMs,
+        error: planRes.success ? undefined : planRes.error,
+      };
+    }
+
+    if (expectedSchema === 'review') {
+      const revRes = ClaudeParser.parseReview(procRes.stdout);
+      return {
+        success: revRes.success,
+        agent: 'claude',
+        agentId: this.id,
+        model: modelToUse,
+        modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
+        output: revRes.success ? revRes.data : undefined,
+        rawOutput: procRes.stdout,
+        structuredOutput: revRes.success ? revRes.data : undefined,
+        durationMs: procRes.durationMs,
+        error: revRes.success ? undefined : revRes.error,
+      };
+    }
+
+    if (expectedSchema === 'final_check') {
+      const confRes = CodexParser.parseConformance(procRes.stdout);
+      return {
+        success: confRes.success,
+        agent: 'claude',
+        agentId: this.id,
+        model: modelToUse,
+        modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
+        output: confRes.success ? confRes.data : undefined,
+        rawOutput: procRes.stdout,
+        structuredOutput: confRes.success ? confRes.data : undefined,
+        durationMs: procRes.durationMs,
+        error: confRes.success ? undefined : confRes.error,
+      };
     }
 
     return {
       success: true,
+      agent: 'claude',
       agentId: this.id,
+      model: modelToUse,
       modelUsed: modelToUse,
+      role: request.role,
+      stage: request.stage,
+      output: procRes.stdout,
       rawOutput: procRes.stdout,
       durationMs: procRes.durationMs,
+    };
+  }
+
+  /**
+   * Backward-compatible execute method
+   */
+  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
+    const roleMap: Record<string, any> = {
+      planning: 'planner',
+      review: 'reviewer',
+      final_check: 'final_checker',
+    };
+    const stageMap: Record<string, any> = {
+      planning: 'PLANNING',
+      review: 'REVIEW',
+      final_check: 'FINAL_CHECK',
+    };
+
+    const role = roleMap[task.type] || 'reviewer';
+    const stage = stageMap[task.type] || 'REVIEW';
+
+    const stageRes = await this.executeStage({
+      id: task.id,
+      runId: context.workspacePath.split('/').pop() || 'run',
+      role,
+      stage,
+      model: task.modelOverride || this.defaultModel,
+      prompt: task.prompt,
+      systemPrompt: task.systemPrompt,
+      workspacePath: context.workspacePath,
+      context: {
+        runId: context.workspacePath.split('/').pop() || 'run',
+        workspacePath: context.workspacePath,
+        userRequest: task.prompt,
+      },
+      readOnly: true,
+      timeoutMs: task.timeoutMs,
+      expectedSchema: task.type === 'review' ? 'review' : task.type === 'planning' ? 'planning' : task.type === 'final_check' ? 'final_check' : 'none',
+    });
+
+    return {
+      success: stageRes.success,
+      agentId: stageRes.agentId,
+      modelUsed: stageRes.modelUsed,
+      rawOutput: stageRes.rawOutput || '',
+      structuredOutput: stageRes.structuredOutput,
+      durationMs: stageRes.durationMs,
+      tokensUsed: stageRes.tokensUsed,
+      error: stageRes.error,
     };
   }
 }

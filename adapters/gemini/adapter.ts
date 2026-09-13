@@ -1,16 +1,79 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import { AgentAdapter } from '../adapter.interface.js';
-import { AgentTask, AgentContext, AgentResult, AgentDetectionResult, AgentStatus, ModelSelectionConfig } from '../../protocol/types.js';
+import {
+  AgentTask,
+  AgentContext,
+  AgentResult,
+  AgentDetectionResult,
+  AgentStatus,
+  ModelSelectionConfig,
+  AgentCapabilities,
+  AgentExecutionRequest,
+  AgentExecutionResult,
+  AgentId,
+} from '../../protocol/types.js';
+import { CodexParser } from '../codex/parser.js';
+import { ClaudeParser } from '../claude/parser.js';
+
+export function buildGeminiAgyArgs(
+  workspacePath: string,
+  fullPrompt: string,
+  model: string,
+  readOnly: boolean = true,
+  reasoningEffort?: 'low' | 'medium' | 'high'
+): string[] {
+  const args: string[] = [
+    '--add-dir', workspacePath,
+    '--dangerously-skip-permissions',
+    '--print-timeout', '15m'
+  ];
+
+  if (!readOnly) {
+    args.push('--mode', 'accept-edits');
+  }
+
+  args.push('-p', fullPrompt);
+
+  if (model && model !== 'default') {
+    const effort = reasoningEffort || 'high';
+    // Only standard gemini-* models without pre-baked effort suffixes support --effort in agy
+    const supportsEffort = model.startsWith('gemini-') &&
+      !model.includes('-high') &&
+      !model.includes('-medium') &&
+      !model.includes('-low') &&
+      !model.includes('thinking');
+
+    args.push('--model', model);
+    if (supportsEffort) {
+      args.push('--effort', effort);
+    }
+  }
+  return args;
+}
 
 export class GeminiAdapter implements AgentAdapter {
-  public id = 'gemini';
+  public id: AgentId = 'gemini';
   public name = 'Antigravity / Gemini (Host & Executor)';
   private defaultModel: string;
   private activeProcess: ChildProcess | null = null;
 
   constructor(config?: ModelSelectionConfig) {
     this.defaultModel = config?.geminiModel || 'gemini-3.8-flash';
+  }
+
+  public getCapabilities(): AgentCapabilities {
+    return {
+      supportsPlanning: true,
+      supportsImplementation: true,
+      supportsReview: true,
+      supportsFix: true,
+      supportsFinalCheck: true,
+      canWriteWorkspace: true,
+      canExecuteCommands: true,
+      availableModels: ['gemini-3.8-flash', 'gemini-3.8-pro', 'gemini-3.5-flash'],
+      defaultModel: 'gemini-3.8-flash',
+    };
   }
 
   public async detect(): Promise<AgentDetectionResult> {
@@ -42,51 +105,170 @@ export class GeminiAdapter implements AgentAdapter {
     };
   }
 
-  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
+  /**
+   * Model-Agnostic Stage Execution
+   */
+  public async executeStage(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
     const startTime = Date.now();
-    const timeout = task.timeoutMs || 15 * 60 * 1000; // 15 min default for full implementation
-    const modelToUse = task.modelOverride || this.defaultModel;
+    const timeout = request.timeoutMs || 15 * 60 * 1000;
+    const modelToUse = request.model || this.defaultModel;
+    const isWriteRole = request.role === 'builder' || request.role === 'fixer' || (request.role as any) === 'BUILDER' || (request.role as any) === 'FIXER' || request.stage === 'IMPLEMENTATION' || request.stage === 'IMPLEMENTING' || request.stage === 'FIX' || request.stage === 'FIXING';
+    const readOnly = request.readOnly !== undefined ? request.readOnly : !isWriteRole;
 
-    // Construct agy arguments for headless, auto-approved workspace modification
-    const args: string[] = [
-      '--add-dir', context.workspacePath,
-      '--dangerously-skip-permissions',
-      '--mode', 'accept-edits',
-      '--print-timeout', '15m',
-      '-p', task.prompt,
-    ];
+    const fullPrompt = `${request.systemPrompt ? request.systemPrompt + '\n\n' : ''}${request.prompt}`;
 
-    if (modelToUse && modelToUse !== 'default') {
-      if (modelToUse.includes('-high') || modelToUse.includes('-medium') || modelToUse.includes('-low')) {
-        args.push('--model', modelToUse);
-      } else if (modelToUse.startsWith('gemini-') || modelToUse.startsWith('claude-')) {
-        args.push('--model', modelToUse, '--effort', 'high');
-      } else {
-        args.push('--model', modelToUse);
+    const buildAgyArgs = (model: string): string[] => {
+      return buildGeminiAgyArgs(request.workspacePath, fullPrompt, model, readOnly, request.reasoningEffort);
+    };
+
+    const parseResult = (rawOutput: string, modelUsed: string, durationMs: number): AgentExecutionResult => {
+      const expectedSchema = request.expectedSchema || (
+        request.stage === 'PLANNING' ? 'planning' :
+        request.stage === 'REVIEW' || request.stage === 'REVIEWING' ? 'review' :
+        request.stage === 'FINAL_CHECK' ? 'final_check' : 'none'
+      );
+
+      if (expectedSchema === 'planning') {
+        const planRes = CodexParser.parsePlan(rawOutput);
+        return {
+          success: planRes.success,
+          agent: 'gemini',
+          agentId: this.id,
+          model: modelUsed,
+          modelUsed,
+          role: request.role,
+          stage: request.stage,
+          output: planRes.success ? planRes.data : undefined,
+          rawOutput,
+          structuredOutput: planRes.success ? planRes.data : undefined,
+          durationMs,
+          error: planRes.success ? undefined : planRes.error,
+        };
       }
-    }
 
-    try {
-      const rawOutput = await this.runAgyCommand(args, timeout, context.workspacePath);
-      const durationMs = Date.now() - startTime;
+      if (expectedSchema === 'review') {
+        const revRes = ClaudeParser.parseReview(rawOutput);
+        return {
+          success: revRes.success,
+          agent: 'gemini',
+          agentId: this.id,
+          model: modelUsed,
+          modelUsed,
+          role: request.role,
+          stage: request.stage,
+          output: revRes.success ? revRes.data : undefined,
+          rawOutput,
+          structuredOutput: revRes.success ? revRes.data : undefined,
+          durationMs,
+          error: revRes.success ? undefined : revRes.error,
+        };
+      }
+
+      if (expectedSchema === 'final_check') {
+        const confRes = CodexParser.parseConformance(rawOutput);
+        return {
+          success: confRes.success,
+          agent: 'gemini',
+          agentId: this.id,
+          model: modelUsed,
+          modelUsed,
+          role: request.role,
+          stage: request.stage,
+          output: confRes.success ? confRes.data : undefined,
+          rawOutput,
+          structuredOutput: confRes.success ? confRes.data : undefined,
+          durationMs,
+          error: confRes.success ? undefined : confRes.error,
+        };
+      }
 
       return {
         success: true,
+        agent: 'gemini',
         agentId: this.id,
-        modelUsed: modelToUse,
+        model: modelUsed,
+        modelUsed,
+        role: request.role,
+        stage: request.stage,
+        output: rawOutput,
         rawOutput,
         durationMs,
       };
+    };
+
+    try {
+      let rawOutput = await this.runAgyCommand(buildAgyArgs(modelToUse), timeout, request.workspacePath);
+      let durationMs = Date.now() - startTime;
+
+      let result = parseResult(rawOutput, modelToUse, durationMs);
+
+      // If schema parsing failed or output is empty, and model was not default Gemini, retry with defaultModel inside Gemini
+      if (!result.success && modelToUse !== this.defaultModel) {
+        console.warn(`[GEMINI] Model "${modelToUse}" failed validation (${result.error}). Retrying with default Gemini model "${this.defaultModel}"...`);
+        const fallbackRaw = await this.runAgyCommand(buildAgyArgs(this.defaultModel), timeout, request.workspacePath);
+        return parseResult(fallbackRaw, this.defaultModel, Date.now() - startTime);
+      }
+
+      return result;
     } catch (err: any) {
+      // If execution crashed on custom/thinking model, retry with canonical default Gemini model
+      if (modelToUse !== this.defaultModel) {
+        console.warn(`[GEMINI] Execution failed with model "${modelToUse}" (${err.message}). Retrying with default Gemini model "${this.defaultModel}"...`);
+        try {
+          const fallbackRaw = await this.runAgyCommand(buildAgyArgs(this.defaultModel), timeout, request.workspacePath);
+          return parseResult(fallbackRaw, this.defaultModel, Date.now() - startTime);
+        } catch (retryErr: any) {
+          console.error(`[GEMINI] Fallback to default model "${this.defaultModel}" also failed:`, retryErr);
+        }
+      }
+
       return {
         success: false,
+        agent: 'gemini',
         agentId: this.id,
+        model: modelToUse,
         modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
+        output: null,
         rawOutput: err.stdout || '',
         durationMs: Date.now() - startTime,
         error: err.message,
       };
     }
+  }
+
+  /**
+   * Backward-compatible execute method
+   */
+  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
+    const stageRes = await this.executeStage({
+      id: task.id,
+      runId: context.workspacePath.split('/').pop() || 'run',
+      role: 'builder',
+      stage: 'IMPLEMENTATION',
+      model: task.modelOverride || this.defaultModel,
+      prompt: task.prompt,
+      systemPrompt: task.systemPrompt,
+      workspacePath: context.workspacePath,
+      context: {
+        runId: context.workspacePath.split('/').pop() || 'run',
+        workspacePath: context.workspacePath,
+        userRequest: task.prompt,
+      },
+      readOnly: false,
+      timeoutMs: task.timeoutMs,
+      expectedSchema: 'none',
+    });
+
+    return {
+      success: stageRes.success,
+      agentId: stageRes.agentId,
+      modelUsed: stageRes.modelUsed,
+      rawOutput: stageRes.rawOutput || '',
+      durationMs: stageRes.durationMs,
+      error: stageRes.error,
+    };
   }
 
   public cancel(): void {

@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "tsx cli.ts",
-    "dev": "tsx server.ts",
-    "ui": "tsx server.ts",
-    "test": "tsx tests/state-machine.test.ts && tsx tests/schema.test.ts && tsx tests/fallback-review.test.ts",
+    "dev": "tsx watch --clear-screen=false server.ts",
+    "ui": "tsx watch --clear-screen=false server.ts",
+    "test": "tsx tests/state-machine.test.ts && tsx tests/schema.test.ts && tsx tests/fallback-review.test.ts && tsx tests/model-agnostic-routing.test.ts",
     "gate-0": "tsx scripts/gate-0.ts",
     "diagnose:claude": "tsx scripts/diagnose-claude.ts",
     "e2e": "tsx scripts/test-autonomous-e2e.ts",

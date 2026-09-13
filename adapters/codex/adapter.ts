@@ -1,11 +1,24 @@
 import { spawn } from 'child_process';
 import { AgentAdapter } from '../adapter.interface.js';
-import { AgentTask, AgentContext, AgentResult, AgentDetectionResult, AgentStatus, ModelSelectionConfig } from '../../protocol/types.js';
+import {
+  AgentTask,
+  AgentContext,
+  AgentResult,
+  AgentDetectionResult,
+  AgentStatus,
+  ModelSelectionConfig,
+  AgentCapabilities,
+  AgentExecutionRequest,
+  AgentExecutionResult,
+  AgentId,
+  WorkflowRole,
+  WorkflowStage,
+} from '../../protocol/types.js';
 import { CodexParser } from './parser.js';
 import { ClaudeParser } from '../claude/parser.js';
 
 export class CodexAdapter implements AgentAdapter {
-  public id = 'codex';
+  public id: AgentId = 'codex';
   public name = 'Codex CLI';
   private defaultModel: string;
   private reasoningEffort?: string;
@@ -22,6 +35,20 @@ export class CodexAdapter implements AgentAdapter {
         console.error('[CODEX] Error killing process:', e);
       }
     }
+  }
+
+  public getCapabilities(): AgentCapabilities {
+    return {
+      supportsPlanning: true,
+      supportsImplementation: true,
+      supportsReview: true,
+      supportsFix: true,
+      supportsFinalCheck: true,
+      canWriteWorkspace: true,
+      canExecuteCommands: true,
+      availableModels: ['gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'],
+      defaultModel: 'gpt-6-astra',
+    };
   }
 
   public static normalizeModelSlug(model?: string): string {
@@ -69,13 +96,23 @@ export class CodexAdapter implements AgentAdapter {
     };
   }
 
-  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
+  /**
+   * Model-Agnostic Stage Execution
+   */
+  public async executeStage(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
     const startTime = Date.now();
-    const modelToUse = CodexAdapter.normalizeModelSlug(task.modelOverride || this.defaultModel);
-    const timeout = task.timeoutMs || 10 * 60 * 1000; // 10 min default (Section 18)
+    const modelToUse = CodexAdapter.normalizeModelSlug(request.model || this.defaultModel);
+    const isWriteRole = request.role === 'builder' || request.role === 'fixer' || (request.role as any) === 'BUILDER' || (request.role as any) === 'FIXER' || request.stage === 'IMPLEMENTATION' || request.stage === 'IMPLEMENTING' || request.stage === 'FIX' || request.stage === 'FIXING';
+    const readOnly = request.readOnly !== undefined ? request.readOnly : !isWriteRole;
+    const timeout = request.timeoutMs || (readOnly ? 10 * 60 * 1000 : 15 * 60 * 1000);
 
-    // Build arguments
-    const args = ['exec', '--skip-git-repo-check', '-s', 'read-only'];
+    const args = ['exec', '--skip-git-repo-check'];
+    if (readOnly) {
+      args.push('-s', 'read-only');
+    } else {
+      args.push('-s', 'workspace-write', '-a', 'never');
+    }
+
     if (modelToUse) {
       args.push('-m', modelToUse);
     }
@@ -83,27 +120,29 @@ export class CodexAdapter implements AgentAdapter {
       args.push('-c', `model_reasoning_effort="${this.reasoningEffort}"`);
     }
 
-    const fullPrompt = `${task.systemPrompt ? task.systemPrompt + '\n\n' : ''}${task.prompt}`;
+    const fullPrompt = `${request.systemPrompt ? request.systemPrompt + '\n\n' : ''}${request.prompt}`;
     args.push(fullPrompt);
 
     try {
-      let rawOutput = await this.runCommand(args, timeout, context.workspacePath);
+      let rawOutput = await this.runCommand(args, timeout, request.workspacePath);
       let durationMs = Date.now() - startTime;
 
-      // Extract tokens if reported
       const tokenMatch = rawOutput.match(/tokens used\s*[\r\n]+([\d,]+)/i);
       const tokensUsed = tokenMatch ? parseInt(tokenMatch[1].replace(/,/g, ''), 10) : undefined;
 
-      // Parse depending on task type
-      if (task.type === 'planning') {
-        let parseResult = CodexParser.parsePlan(rawOutput);
+      const expectedSchema = request.expectedSchema || (
+        request.stage === 'PLANNING' ? 'planning' :
+        request.stage === 'REVIEW' ? 'review' :
+        request.stage === 'FINAL_CHECK' ? 'final_check' : 'none'
+      );
 
-        // Section 7: If parsing fails, retry ONCE with correction instruction
+      if (expectedSchema === 'planning') {
+        let parseResult = CodexParser.parsePlan(rawOutput);
         if (!parseResult.success) {
           console.warn(`[CODEX] Initial plan parsing failed (${parseResult.error}). Retrying once with correction instruction...`);
           const retryPrompt = `${fullPrompt}\n\nATTENTION: Your previous response could not be parsed as valid JSON according to the schema. Output ONLY a valid JSON object matching the required schema. No conversational text.`;
           const retryArgs = [...args.slice(0, -1), retryPrompt];
-          rawOutput = await this.runCommand(retryArgs, timeout, context.workspacePath);
+          rawOutput = await this.runCommand(retryArgs, timeout, request.workspacePath);
           durationMs = Date.now() - startTime;
           parseResult = CodexParser.parsePlan(rawOutput);
 
@@ -112,10 +151,12 @@ export class CodexAdapter implements AgentAdapter {
               success: false,
               agentId: this.id,
               modelUsed: modelToUse,
+              role: request.role,
+              stage: request.stage,
               rawOutput,
               durationMs,
               tokensUsed,
-              error: `Schema validation failed after retry: ${parseResult.error}`,
+              error: `Plan schema validation failed after retry: ${parseResult.error}`,
             };
           }
         }
@@ -124,6 +165,8 @@ export class CodexAdapter implements AgentAdapter {
           success: true,
           agentId: this.id,
           modelUsed: modelToUse,
+          role: request.role,
+          stage: request.stage,
           rawOutput,
           structuredOutput: parseResult.data,
           durationMs,
@@ -131,22 +174,26 @@ export class CodexAdapter implements AgentAdapter {
         };
       }
 
-      if (task.type === 'review') {
+      if (expectedSchema === 'review') {
         let reviewResult = ClaudeParser.parseReview(rawOutput);
-
         if (!reviewResult.success) {
           console.warn(`[CODEX] Initial review parsing failed (${reviewResult.error}). Retrying once with correction instruction...`);
           const retryPrompt = `${fullPrompt}\n\nATTENTION: Your previous response could not be parsed as valid JSON according to the schema. Output ONLY a valid JSON object matching the required schema with keys "decision" ("APPROVED" or "CHANGES_REQUESTED"), "summary", and "issues". No conversational text.`;
           const retryArgs = [...args.slice(0, -1), retryPrompt];
-          rawOutput = await this.runCommand(retryArgs, timeout, context.workspacePath);
+          rawOutput = await this.runCommand(retryArgs, timeout, request.workspacePath);
           durationMs = Date.now() - startTime;
           reviewResult = ClaudeParser.parseReview(rawOutput);
 
           if (!reviewResult.success) {
             return {
               success: false,
+              agent: 'codex',
               agentId: this.id,
+              model: modelToUse,
               modelUsed: modelToUse,
+              role: request.role,
+              stage: request.stage,
+              output: null,
               rawOutput,
               durationMs,
               tokensUsed,
@@ -155,36 +202,52 @@ export class CodexAdapter implements AgentAdapter {
           }
         }
 
+        const parsedReview = reviewResult.data;
         return {
           success: true,
-          agentId: this.id,
+          agent: 'codex',
+          agentId: 'codex',
+          model: modelToUse,
           modelUsed: modelToUse,
+          role: request.role,
+          stage: request.stage,
+          output: parsedReview,
           rawOutput,
-          structuredOutput: reviewResult.data,
+          structuredOutput: parsedReview,
           durationMs,
           tokensUsed,
         };
       }
 
-      if (task.type === 'final_check') {
-        const conformanceResult = CodexParser.parseConformance(rawOutput);
+      if (expectedSchema === 'final_check') {
+        const confRes = CodexParser.parseConformance(rawOutput);
+        const confData = confRes.success ? confRes.data : undefined;
         return {
-          success: conformanceResult.success,
-          agentId: this.id,
+          success: confRes.success && confData?.decision === 'CONFORMANT',
+          agent: 'codex',
+          agentId: 'codex',
+          model: modelToUse,
           modelUsed: modelToUse,
+          role: request.role,
+          stage: request.stage,
+          output: confData,
           rawOutput,
-          structuredOutput: conformanceResult.success ? conformanceResult.data : undefined,
-          durationMs,
+          structuredOutput: confData,
+          durationMs: Date.now() - startTime,
           tokensUsed,
-          error: conformanceResult.success ? undefined : conformanceResult.error,
+          error: confRes.success ? undefined : confRes.error,
         };
       }
 
-      // Default unstructured or generic task
       return {
         success: true,
-        agentId: this.id,
+        agent: 'codex',
+        agentId: 'codex',
+        model: modelToUse,
         modelUsed: modelToUse,
+        role: request.role,
+        stage: request.stage,
+        output: rawOutput,
         rawOutput,
         durationMs,
         tokensUsed,
@@ -192,13 +255,67 @@ export class CodexAdapter implements AgentAdapter {
     } catch (err: any) {
       return {
         success: false,
-        agentId: this.id,
+        agent: 'codex',
+        agentId: 'codex',
+        model: modelToUse,
         modelUsed: modelToUse,
-        rawOutput: err.stdout || '',
+        role: request.role,
+        stage: request.stage,
+        output: null,
+        rawOutput: err.stdout || err.stderr || '',
         durationMs: Date.now() - startTime,
         error: err.message,
       };
     }
+  }
+
+  /**
+   * Backward-compatible execute method
+   */
+  public async execute(task: AgentTask, context: AgentContext): Promise<AgentResult> {
+    const roleMap: Record<string, WorkflowRole> = {
+      planning: 'planner',
+      review: 'reviewer',
+      final_check: 'final_checker',
+    };
+    const stageMap: Record<string, WorkflowStage> = {
+      planning: 'PLANNING',
+      review: 'REVIEW',
+      final_check: 'FINAL_CHECK',
+    };
+
+    const role: WorkflowRole = roleMap[task.type] || 'planner';
+    const stage: WorkflowStage = stageMap[task.type] || 'PLANNING';
+
+    const stageRes = await this.executeStage({
+      id: task.id,
+      runId: context.workspacePath.split('/').pop() || 'run',
+      role,
+      stage,
+      model: task.modelOverride || this.defaultModel,
+      prompt: task.prompt,
+      systemPrompt: task.systemPrompt,
+      workspacePath: context.workspacePath,
+      context: {
+        runId: context.workspacePath.split('/').pop() || 'run',
+        workspacePath: context.workspacePath,
+        userRequest: task.prompt,
+      },
+      readOnly: task.type !== 'planning' && task.type !== 'review' && task.type !== 'final_check' ? false : true,
+      timeoutMs: task.timeoutMs,
+      expectedSchema: task.type === 'planning' ? 'planning' : task.type === 'review' ? 'review' : task.type === 'final_check' ? 'final_check' : 'none',
+    });
+
+    return {
+      success: stageRes.success,
+      agentId: stageRes.agentId,
+      modelUsed: stageRes.modelUsed,
+      rawOutput: stageRes.rawOutput || '',
+      structuredOutput: stageRes.structuredOutput,
+      durationMs: stageRes.durationMs,
+      tokensUsed: stageRes.tokensUsed,
+      error: stageRes.error,
+    };
   }
 
   private runCommand(args: string[], timeoutMs: number, cwd?: string): Promise<string> {

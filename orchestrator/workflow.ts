@@ -5,16 +5,32 @@ import { ContextBuilder } from './context-builder.js';
 import { ProjectBootstrapper } from './bootstrapper.js';
 import { ProjectVerifier, VerificationResult } from './verifier.js';
 import { EventLogger } from '../protocol/events.js';
+import { AgentRouter } from './agent-router.js';
 import { CodexAdapter } from '../adapters/codex/adapter.js';
 import { ClaudeAdapter } from '../adapters/claude/adapter.js';
 import { GeminiAdapter } from '../adapters/gemini/adapter.js';
-import { ModelSelectionConfig, AgentResult, WorkflowState } from '../protocol/types.js';
-import { CodexPlan, ClaudeReview, CodexConformance } from '../protocol/schemas.js';
+import {
+  ModelSelectionConfig,
+  AgentResult,
+  WorkflowState,
+  WorkflowRoutingConfig,
+  ResolvedWorkflowRouting,
+  AgentExecutionResult,
+} from '../protocol/types.js';
+import {
+  PlanningResult,
+  ReviewResult,
+  FinalCheckResult,
+  CodexPlan,
+  ClaudeReview,
+  CodexConformance,
+} from '../protocol/schemas.js';
 
 export interface WorkflowOptions {
   userRequest: string;
   workspacePath: string;
   runId?: string;
+  routing?: WorkflowRoutingConfig;
   models?: ModelSelectionConfig;
   promptsDir?: string;
   runsDir?: string;
@@ -25,21 +41,21 @@ export interface WorkflowRunResult {
   runId: string;
   status: WorkflowState;
   workspacePath: string;
-  plan?: CodexPlan;
+  plan?: PlanningResult;
   reviewApproved: boolean;
   reviewRounds: number;
   codexConformant: boolean;
   verificationPassed: boolean;
   durationMs: number;
+  routing?: ResolvedWorkflowRouting;
   error?: string;
 }
 
 export class WorkflowController {
   private stateMachine: StateMachine;
   private logger: EventLogger;
-  private codexAdapter: CodexAdapter;
-  private claudeAdapter: ClaudeAdapter;
-  private geminiAdapter: GeminiAdapter;
+  private router: AgentRouter;
+  private routing: ResolvedWorkflowRouting;
   private options: WorkflowOptions;
   private runDir: string;
   private promptsDir: string;
@@ -58,9 +74,35 @@ export class WorkflowController {
 
     this.logger = new EventLogger(this.runDir);
     this.stateMachine = new StateMachine('IDLE');
-    this.codexAdapter = new CodexAdapter(options.models);
-    this.claudeAdapter = new ClaudeAdapter(options.models);
-    this.geminiAdapter = new GeminiAdapter(options.models);
+
+    this.router = new AgentRouter(this.promptsDir, options.models);
+    this.routing = this.router.resolveRouting(options.routing, options.models);
+
+    // Persist resolved routing for this run
+    fs.writeFileSync(
+      path.join(this.runDir, 'routing.json'),
+      JSON.stringify(this.routing, null, 2),
+      'utf8'
+    );
+
+    // Log routing configuration
+    this.logger.log({
+      run_id: this.getRunId(),
+      from: 'orchestrator',
+      to: 'system',
+      type: 'ROUTING_CONFIGURED',
+      status: 'info',
+      data: {
+        preset: this.routing.preset || 'custom',
+        planner: this.routing.planner,
+        builder: this.routing.builder,
+        reviewer: this.routing.reviewer,
+        fixer: this.routing.fixer,
+        final_checker: this.routing.final_checker,
+        isIndependentReview: this.routing.isIndependentReview,
+        independenceWarning: this.routing.independenceWarning,
+      },
+    });
   }
 
   public getRunId(): string {
@@ -75,16 +117,25 @@ export class WorkflowController {
     return this.stateMachine;
   }
 
+  public getRouter(): AgentRouter {
+    return this.router;
+  }
+
+  public getRouting(): ResolvedWorkflowRouting {
+    return this.routing;
+  }
+
+  // Backward compatibility adapter accessors
   public getCodexAdapter(): CodexAdapter {
-    return this.codexAdapter;
+    return this.router.getCodexAdapter();
   }
 
   public getClaudeAdapter(): ClaudeAdapter {
-    return this.claudeAdapter;
+    return this.router.getClaudeAdapter();
   }
 
   public getGeminiAdapter(): GeminiAdapter {
-    return this.geminiAdapter;
+    return this.router.getGeminiAdapter();
   }
 
   public getEventLogger(): EventLogger {
@@ -112,9 +163,7 @@ export class WorkflowController {
 
   public cancel(): void {
     this.cancelled = true;
-    this.codexAdapter.cancel();
-    this.claudeAdapter.cancel();
-    this.geminiAdapter.cancel();
+    this.router.cancelAll();
 
     try {
       this.transition('CANCELLED');
@@ -133,9 +182,9 @@ export class WorkflowController {
   }
 
   /**
-   * Phase 1: Codex Planning
+   * Stage 1: Planning (Role-agnostic)
    */
-  public async runPlanning(): Promise<CodexPlan> {
+  public async runPlanning(): Promise<PlanningResult> {
     if (this.cancelled) throw new Error('Run cancelled');
     this.transition('REQUEST_RECEIVED');
     this.logger.log({
@@ -150,63 +199,53 @@ export class WorkflowController {
     // Save request.md
     fs.writeFileSync(path.join(this.runDir, 'request.md'), `# USER REQUEST\n\n${this.options.userRequest}\n`, 'utf8');
 
-    // 1. CODEX PLANNING
+    // 1. PLANNING
     this.transition('PLANNING');
+    const plannerAgent = this.routing.planner.agent;
+    const plannerModel = this.routing.planner.model;
+
     this.logger.log({
       run_id: this.getRunId(),
       from: 'orchestrator',
-      to: 'codex',
+      to: plannerAgent,
       type: 'PLAN_REQUESTED',
       status: 'sent',
-      data: { model: this.options.models?.codexModel || 'default' },
+      data: { agent: plannerAgent, model: plannerModel },
     });
 
-    const codexSystemPrompt = fs.readFileSync(path.join(this.promptsDir, 'codex-plan.md'), 'utf8');
-    const planPrompt = ContextBuilder.buildCodexPlanPrompt(this.options.userRequest);
+    const planPrompt = ContextBuilder.buildPlanPrompt(this.options.userRequest);
 
-    const planResult: AgentResult = await this.codexAdapter.execute(
-      {
-        id: 'task-plan',
-        type: 'planning',
-        prompt: planPrompt,
-        systemPrompt: codexSystemPrompt,
-        modelOverride: this.options.models?.codexModel,
-      },
-      {
-        runId: this.getRunId(),
-        workspacePath: this.options.workspacePath,
-        userRequest: this.options.userRequest,
-      }
-    );
+    const planExecution: AgentExecutionResult = await this.router.execute('PLANNING', {
+      role: 'planner',
+      assignment: this.routing.planner,
+      prompt: planPrompt,
+      workspacePath: this.options.workspacePath,
+      userRequest: this.options.userRequest,
+    });
 
-    if (!planResult.success || !planResult.structuredOutput) {
-      this.transition('BLOCKED');
-      this.logger.log({
-        run_id: this.getRunId(),
-        from: 'codex',
-        to: 'orchestrator',
-        type: 'WORKFLOW_BLOCKED',
-        status: 'blocked',
-        data: { error: planResult.error, raw: planResult.rawOutput.slice(0, 500) },
-      });
-      throw new Error(`Codex planning failed: ${planResult.error}`);
+    if (!planExecution.success || !planExecution.structuredOutput) {
+      throw new Error(`Planning failed with ${plannerAgent}: ${planExecution.error || 'No structured output'}`);
     }
 
-    const plan = planResult.structuredOutput as CodexPlan;
+    const plan = planExecution.structuredOutput as PlanningResult;
+
+    // Persist plan.json
     fs.writeFileSync(path.join(this.runDir, 'plan.json'), JSON.stringify(plan, null, 2), 'utf8');
 
     this.logger.log({
       run_id: this.getRunId(),
-      from: 'codex',
+      from: plannerAgent,
       to: 'orchestrator',
       type: 'PLAN_RECEIVED',
       status: 'success',
       data: {
+        agent: plannerAgent,
+        model: planExecution.modelUsed,
         objective: plan.objective,
-        stepsCount: plan.implementation_steps.length,
-        criteriaCount: plan.acceptance_criteria.length,
-        tokensUsed: planResult.tokensUsed,
-        durationMs: planResult.durationMs,
+        stepsCount: plan.implementation_steps?.length || 0,
+        criteriaCount: plan.acceptance_criteria?.length || 0,
+        tokensUsed: planExecution.tokensUsed,
+        durationMs: planExecution.durationMs,
       },
     });
 
@@ -215,141 +254,165 @@ export class WorkflowController {
   }
 
   /**
-   * Phase 2: Gemini Physical Implementation in Workspace
+   * Stage 2: Physical Implementation in Workspace (Role-agnostic)
    */
-  public async runImplementation(plan: CodexPlan): Promise<AgentResult> {
+  public async runImplementation(plan: PlanningResult): Promise<AgentExecutionResult> {
     if (this.cancelled) throw new Error('Run cancelled');
     this.transition('IMPLEMENTING');
+
+    const builderAgent = this.routing.builder.agent;
+    const builderModel = this.routing.builder.model;
+
     this.logger.log({
       run_id: this.getRunId(),
       from: 'orchestrator',
-      to: 'gemini',
+      to: builderAgent,
       type: 'IMPLEMENTATION_STARTED',
       status: 'processing',
-      data: { model: this.options.models?.geminiModel || 'gemini-3.8-flash' },
+      data: { agent: builderAgent, model: builderModel },
     });
 
-    const geminiSystemPrompt = fs.existsSync(path.join(this.promptsDir, 'gemini-impl.md'))
-      ? fs.readFileSync(path.join(this.promptsDir, 'gemini-impl.md'), 'utf8')
-      : 'You are the primary Code Implementation Agent.';
-
-    const implPrompt = ContextBuilder.buildGeminiImplPrompt(
+    const implPrompt = ContextBuilder.buildImplementationPrompt(
       this.options.userRequest,
       plan,
       this.options.workspacePath
     );
 
-    const implResult = await this.geminiAdapter.execute(
-      {
-        id: 'task-implementation',
-        type: 'planning', // agy handles generic execution
-        prompt: `${geminiSystemPrompt}\n\n${implPrompt}`,
-        modelOverride: this.options.models?.geminiModel,
-      },
-      {
-        runId: this.getRunId(),
-        workspacePath: this.options.workspacePath,
-        userRequest: this.options.userRequest,
-        plan,
-      }
-    );
+    const implExecution = await this.router.execute('IMPLEMENTATION', {
+      role: 'builder',
+      assignment: this.routing.builder,
+      prompt: implPrompt,
+      workspacePath: this.options.workspacePath,
+      userRequest: this.options.userRequest,
+      plan,
+    });
 
     // Capture diff
     const gitDiff = await ProjectBootstrapper.getGitDiff(this.options.workspacePath);
-    this.recordImplementation(implResult.rawOutput, gitDiff, 'Implementation finished. Awaiting verification tests.');
+    this.recordImplementation(implExecution.rawOutput || '', gitDiff, 'Implementation finished. Awaiting verification tests.');
 
     this.logger.log({
       run_id: this.getRunId(),
-      from: 'gemini',
+      from: builderAgent,
       to: 'orchestrator',
       type: 'IMPLEMENTATION_COMPLETED',
-      status: implResult.success ? 'success' : 'failed',
-      data: { durationMs: implResult.durationMs },
+      status: implExecution.success ? 'success' : 'failed',
+      data: {
+        agent: builderAgent,
+        model: implExecution.modelUsed || implExecution.model,
+        durationMs: implExecution.durationMs,
+      },
     });
 
-    return implResult;
+    return implExecution;
   }
 
   /**
-   * Phase 2b: Gemini Code Repair
+   * Stage 2b: Code Repair (Role-agnostic)
    */
-  public async runGeminiFix(
+  public async runFix(
     issues: string[],
     contextSummary: string,
     testOutput?: string
-  ): Promise<AgentResult> {
+  ): Promise<AgentExecutionResult> {
     if (this.cancelled) throw new Error('Run cancelled');
     this.transition('FIXING');
+
+    const fixerAgent = this.routing.fixer.agent;
+    const fixerModel = this.routing.fixer.model;
+
     this.logger.log({
       run_id: this.getRunId(),
       from: 'orchestrator',
-      to: 'gemini',
+      to: fixerAgent,
       type: 'FIX_STARTED',
       status: 'processing',
-      data: { issuesCount: issues.length, issues },
+      data: {
+        agent: fixerAgent,
+        model: fixerModel,
+        issuesCount: issues.length,
+        issues,
+      },
     });
 
-    const geminiFixSystemPrompt = fs.existsSync(path.join(this.promptsDir, 'gemini-fix.md'))
-      ? fs.readFileSync(path.join(this.promptsDir, 'gemini-fix.md'), 'utf8')
-      : 'You are the Code Repair Agent.';
-
-    const fixPrompt = ContextBuilder.buildGeminiFixPrompt(
+    const fixPrompt = ContextBuilder.buildFixPrompt(
       this.options.userRequest,
       issues,
       contextSummary,
       testOutput
     );
 
-    const fixResult = await this.geminiAdapter.execute(
-      {
-        id: `task-fix-${Date.now()}`,
-        type: 'planning',
-        prompt: `${geminiFixSystemPrompt}\n\n${fixPrompt}`,
-        modelOverride: this.options.models?.geminiModel,
-      },
-      {
-        runId: this.getRunId(),
-        workspacePath: this.options.workspacePath,
-        userRequest: this.options.userRequest,
-      }
-    );
+    const fixExecution = await this.router.execute('FIX', {
+      role: 'fixer',
+      assignment: this.routing.fixer,
+      prompt: fixPrompt,
+      workspacePath: this.options.workspacePath,
+      userRequest: this.options.userRequest,
+    });
 
     this.logger.log({
       run_id: this.getRunId(),
-      from: 'gemini',
+      from: fixerAgent,
       to: 'orchestrator',
       type: 'FIX_COMPLETED',
-      status: fixResult.success ? 'success' : 'failed',
-      data: { durationMs: fixResult.durationMs },
+      status: fixExecution.success ? 'success' : 'failed',
+      data: {
+        agent: fixerAgent,
+        model: fixExecution.modelUsed || fixExecution.model,
+        durationMs: fixExecution.durationMs,
+      },
     });
 
-    return fixResult;
+    return fixExecution;
+  }
+
+  public async runGeminiFix(
+    issues: string[],
+    contextSummary: string,
+    testOutput?: string
+  ): Promise<AgentResult> {
+    const res = await this.runFix(issues, contextSummary, testOutput);
+    return {
+      success: res.success,
+      agentId: res.agentId || res.agent || 'gemini',
+      modelUsed: res.modelUsed || res.model || 'default',
+      rawOutput: res.rawOutput || '',
+      durationMs: res.durationMs,
+      error: res.error,
+    };
   }
 
   /**
-   * Phase 3: Claude Code Adversarial Review
+   * Stage 3: Independent Adversarial Review (Role-agnostic)
    */
   public async runReview(
-    plan: CodexPlan,
+    plan: PlanningResult,
     gitDiff: string,
     testResults: string,
     keyFiles?: Record<string, string>
-  ): Promise<ClaudeReview> {
+  ): Promise<ReviewResult> {
     if (this.cancelled) throw new Error('Run cancelled');
     const round = this.stateMachine.incrementReviewRound();
     this.transition('REVIEWING');
 
+    const reviewerAgent = this.routing.reviewer.agent;
+    const reviewerModel = this.routing.reviewer.model;
+
     this.logger.log({
       run_id: this.getRunId(),
       from: 'orchestrator',
-      to: 'claude',
+      to: reviewerAgent,
       type: 'REVIEW_REQUESTED',
       status: 'sent',
-      data: { round, model: this.options.models?.claudeModel || 'default' },
+      data: {
+        round,
+        agent: reviewerAgent,
+        model: reviewerModel,
+        isIndependent: this.routing.isIndependentReview,
+      },
     });
 
-    const claudeSystemPrompt = fs.readFileSync(path.join(this.promptsDir, 'claude-review.md'), 'utf8');
-    const reviewPrompt = ContextBuilder.buildClaudeReviewPrompt(
+    const reviewPrompt = ContextBuilder.buildReviewPrompt(
       this.options.userRequest,
       plan,
       gitDiff,
@@ -357,129 +420,51 @@ export class WorkflowController {
       keyFiles
     );
 
-    let reviewResult: AgentResult | null = null;
-    let usedFallback = false;
-    let claudeErrorReason = '';
+    const reviewExecution = await this.router.execute('REVIEW', {
+      role: 'reviewer',
+      assignment: this.routing.reviewer,
+      prompt: reviewPrompt,
+      workspacePath: this.options.workspacePath,
+      userRequest: this.options.userRequest,
+      plan,
+      options: {
+        reviewerFallback: this.options.models?.reviewerFallback ?? true,
+      },
+      ...({ models: this.options.models }),
+    });
 
-    // Check if reviewerFallback is enabled (default: true)
-    const allowFallback = this.options.models?.reviewerFallback !== false;
-
-    try {
-      reviewResult = await this.claudeAdapter.execute(
-        {
-          id: `task-review-${round}`,
-          type: 'review',
-          prompt: reviewPrompt,
-          systemPrompt: claudeSystemPrompt,
-          modelOverride: this.options.models?.claudeModel,
-          timeoutMs: 240000,
-        },
-        {
-          runId: this.getRunId(),
-          workspacePath: this.options.workspacePath,
-          userRequest: this.options.userRequest,
-          plan,
-          gitDiff,
-          testResults,
-          reviewRound: round,
-        }
-      );
-    } catch (claudeErr: any) {
-      claudeErrorReason = claudeErr.message;
-      reviewResult = {
-        success: false,
-        agentId: 'claude',
-        modelUsed: this.options.models?.claudeModel || 'opus',
-        rawOutput: '',
-        durationMs: 0,
-        error: claudeErr.message,
-      };
+    if (!reviewExecution.success || !reviewExecution.structuredOutput) {
+      throw new Error(`Review stage failed with ${reviewerAgent}: ${reviewExecution.error || 'No structured output'}`);
     }
 
-    if (!reviewResult || !reviewResult.success || !reviewResult.structuredOutput) {
-      claudeErrorReason = reviewResult?.error || claudeErrorReason || 'Claude review failed';
-
-      if (allowFallback) {
-        console.log(`\n🛡️ [ORCHESTRATOR] Claude review unavailable (${claudeErrorReason}).`);
-        console.log(`🔄 [ORCHESTRATOR] Automatic Fallback Triggered: Delegating Adversarial Review to Codex CLI...`);
-
-        this.logger.log({
-          run_id: this.getRunId(),
-          from: 'orchestrator',
-          to: 'codex',
-          type: 'REVIEW_FALLBACK_TRIGGERED',
-          status: 'warning',
-          data: {
-            round,
-            primaryReviewer: 'claude',
-            fallbackReviewer: 'codex',
-            reason: claudeErrorReason,
-            model: this.options.models?.codexModel || 'gpt-6-astra',
-          },
-        });
-
-        // Prompt Codex as Adversarial Reviewer
-        const codexReviewPrompt = `You are acting as the INDEPENDENT ADVERSARIAL REVIEWER (fallback reviewer) for this project.\nInspect the actual code, git diff, and test results.\nDo not trust implementation claims.\n\n${claudeSystemPrompt}\n\n${reviewPrompt}`;
-
-        const codexReviewResult = await this.codexAdapter.execute(
-          {
-            id: `task-codex-review-${round}`,
-            type: 'review',
-            prompt: codexReviewPrompt,
-            modelOverride: this.options.models?.codexModel,
-          },
-          {
-            runId: this.getRunId(),
-            workspacePath: this.options.workspacePath,
-            userRequest: this.options.userRequest,
-            plan,
-            gitDiff,
-            testResults,
-            reviewRound: round,
-          }
-        );
-
-        if (!codexReviewResult.success || !codexReviewResult.structuredOutput) {
-          throw new Error(`Both Claude and Codex review failed. Codex error: ${codexReviewResult.error || 'No structured output'}`);
-        }
-
-        reviewResult = codexReviewResult;
-        usedFallback = true;
-      } else {
-        if (claudeErrorReason.includes('AUTH_REQUIRED') || claudeErrorReason.includes('Not logged in') || claudeErrorReason.includes('Please run /login') || claudeErrorReason.includes('AUTH_SESSION_BROKEN') || claudeErrorReason.includes('AUTH_TOKEN_EXPIRED')) {
-          throw new Error(`Claude Code subscription authentication is unavailable (${claudeErrorReason}). Run in Terminal:\nclaude auth status\nIf necessary:\nclaude auth logout\nclaude update\nclaude auth login\nThen verify:\nclaude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK"`);
-        }
-        throw new Error(`Claude review failed: ${claudeErrorReason}`);
-      }
-    }
-
-    const review = reviewResult.structuredOutput as ClaudeReview;
-    if (usedFallback) {
-      (review as any).reviewer = 'codex-fallback';
-      (review as any).reviewerModel = reviewResult.modelUsed || this.options.models?.codexModel || 'codex';
-    } else {
-      (review as any).reviewer = 'claude';
-      (review as any).reviewerModel = reviewResult.modelUsed || this.options.models?.claudeModel || 'claude';
-    }
+    const review = reviewExecution.structuredOutput as ReviewResult;
+    (review as any).reviewer = reviewExecution.agentId || reviewExecution.agent;
+    (review as any).reviewerModel = reviewExecution.modelUsed || reviewExecution.model;
 
     const reviewFilename = `review-0${round}.json`;
     fs.writeFileSync(path.join(this.runDir, reviewFilename), JSON.stringify(review, null, 2), 'utf8');
 
-    const reviewerAgent = usedFallback ? 'codex' : 'claude';
+    const agentName = reviewExecution.agentId || reviewExecution.agent;
+    const modelName = reviewExecution.modelUsed || reviewExecution.model;
 
     if (review.decision === 'APPROVED') {
       this.logger.log({
         run_id: this.getRunId(),
-        from: reviewerAgent,
+        from: agentName,
         to: 'orchestrator',
         type: 'REVIEW_APPROVED',
         status: 'success',
-        data: { round, summary: review.summary, fallback: usedFallback },
+        data: {
+          round,
+          summary: review.summary,
+          agent: agentName,
+          model: modelName,
+        },
       });
     } else {
       this.logger.log({
         run_id: this.getRunId(),
-        from: reviewerAgent,
+        from: agentName,
         to: 'orchestrator',
         type: 'CHANGES_REQUESTED',
         status: 'received',
@@ -487,7 +472,8 @@ export class WorkflowController {
           round,
           issuesCount: review.issues.length,
           issues: review.issues,
-          fallback: usedFallback,
+          agent: agentName,
+          model: modelName,
         },
       });
       this.transition('CHANGES_REQUESTED');
@@ -497,79 +483,77 @@ export class WorkflowController {
   }
 
   /**
-   * Phase 4: Codex Final Conformance Check
+   * Stage 4: Final Plan-Conformance Check (Role-agnostic)
    */
   public async runFinalCheck(
-    plan: CodexPlan,
+    plan: PlanningResult,
     implementationSummary: string,
-    claudeSummary: string,
+    reviewSummary: string,
     gitDiff: string,
     testResults: string
-  ): Promise<CodexConformance> {
+  ): Promise<FinalCheckResult> {
     if (this.cancelled) throw new Error('Run cancelled');
     this.transition('FINAL_CHECK');
+
+    const finalCheckerAssignment = this.routing.finalChecker || this.routing.final_checker;
+    const checkerAgent = finalCheckerAssignment.agent;
+    const checkerModel = finalCheckerAssignment.model;
 
     this.logger.log({
       run_id: this.getRunId(),
       from: 'orchestrator',
-      to: 'codex',
+      to: checkerAgent,
       type: 'FINAL_CHECK_REQUESTED',
       status: 'sent',
-      data: { model: this.options.models?.codexModel || 'default' },
+      data: { agent: checkerAgent, model: checkerModel },
     });
 
-    const finalCheckSystemPrompt = fs.readFileSync(path.join(this.promptsDir, 'codex-final-check.md'), 'utf8');
-    const finalCheckPrompt = ContextBuilder.buildCodexFinalCheckPrompt(
+    const finalCheckPrompt = ContextBuilder.buildFinalCheckPrompt(
       this.options.userRequest,
       plan,
       implementationSummary,
-      claudeSummary,
+      reviewSummary,
       gitDiff,
       testResults
     );
 
-    const finalCheckResult: AgentResult = await this.codexAdapter.execute(
-      {
-        id: 'task-final-check',
-        type: 'final_check',
-        prompt: finalCheckPrompt,
-        systemPrompt: finalCheckSystemPrompt,
-        modelOverride: this.options.models?.codexModel,
-      },
-      {
-        runId: this.getRunId(),
-        workspacePath: this.options.workspacePath,
-        userRequest: this.options.userRequest,
-        plan,
-        gitDiff,
-        testResults,
-      }
-    );
+    const finalCheckExecution = await this.router.execute('FINAL_CHECK', {
+      role: 'final_checker',
+      assignment: finalCheckerAssignment,
+      prompt: finalCheckPrompt,
+      workspacePath: this.options.workspacePath,
+      userRequest: this.options.userRequest,
+      plan,
+    });
 
-    if (!finalCheckResult.success || !finalCheckResult.structuredOutput) {
-      throw new Error(`Codex final conformance check failed: ${finalCheckResult.error}`);
+    if (!finalCheckExecution.success || !finalCheckExecution.structuredOutput) {
+      throw new Error(`Final conformance check failed with ${checkerAgent}: ${finalCheckExecution.error || 'No structured output'}`);
     }
 
-    const conformance = finalCheckResult.structuredOutput as CodexConformance;
+    const conformance = finalCheckExecution.structuredOutput as FinalCheckResult;
     fs.writeFileSync(path.join(this.runDir, 'final-check.json'), JSON.stringify(conformance, null, 2), 'utf8');
 
     if (conformance.decision === 'CONFORMANT') {
       this.logger.log({
         run_id: this.getRunId(),
-        from: 'codex',
+        from: checkerAgent,
         to: 'orchestrator',
         type: 'FINAL_CHECK_PASSED',
         status: 'success',
-        data: { summary: conformance.summary },
+        data: { summary: conformance.summary, agent: checkerAgent },
       });
     } else {
       this.logger.log({
         run_id: this.getRunId(),
-        from: 'codex',
+        from: checkerAgent,
         to: 'orchestrator',
         type: 'FINAL_CHECK_FAILED',
         status: 'failed',
-        data: { missing: conformance.missing_items, deviations: conformance.deviations },
+        data: {
+          missing: conformance.missing_items,
+          deviations: conformance.deviations,
+          agent: checkerAgent,
+        },
       });
     }
 
@@ -577,7 +561,7 @@ export class WorkflowController {
   }
 
   /**
-   * Phase 5: Machine Checks Verification
+   * Stage 5: Machine Checks Verification
    */
   public async runProjectVerification(): Promise<VerificationResult> {
     if (this.cancelled) throw new Error('Run cancelled');
@@ -616,23 +600,23 @@ export class WorkflowController {
   }
 
   /**
-   * Authoritative Completion Rule (Section 30)
+   * Authoritative Completion Rule
    * The ONLY function allowed to mark a run COMPLETED after strictly verifying all prerequisites.
    */
   public completeRun(
-    plan: CodexPlan,
-    claudeReview: ClaudeReview,
-    conformance: CodexConformance,
+    plan: PlanningResult,
+    review: ReviewResult,
+    conformance: FinalCheckResult,
     verification: VerificationResult
   ): void {
     if (!plan || !plan.objective) {
-      throw new Error('Completion prerequisite violated: Missing or invalid Codex plan');
+      throw new Error('Completion prerequisite violated: Missing or invalid plan');
     }
-    if (!claudeReview || claudeReview.decision !== 'APPROVED') {
-      throw new Error(`Completion prerequisite violated: Claude review not approved (${claudeReview?.decision})`);
+    if (!review || review.decision !== 'APPROVED') {
+      throw new Error(`Completion prerequisite violated: Review not approved (${review?.decision})`);
     }
     if (!conformance || conformance.decision !== 'CONFORMANT') {
-      throw new Error(`Completion prerequisite violated: Codex final check not conformant (${conformance?.decision})`);
+      throw new Error(`Completion prerequisite violated: Final check not conformant (${conformance?.decision})`);
     }
     if (!verification || !verification.pass) {
       throw new Error('Completion prerequisite violated: Automated test and build verification failed');
@@ -648,8 +632,9 @@ export class WorkflowController {
       data: {
         planObjective: plan.objective,
         reviewRounds: this.stateMachine.getReviewRound(),
-        claudeSummary: claudeReview.summary,
+        reviewSummary: review.summary,
         conformanceSummary: conformance.summary,
+        routing: this.routing,
       },
     });
 
@@ -659,6 +644,7 @@ export class WorkflowController {
       completedAt: new Date().toISOString(),
       userRequest: this.options.userRequest,
       workspacePath: this.options.workspacePath,
+      routing: this.routing,
       models: this.options.models,
       reviewRounds: this.stateMachine.getReviewRound(),
       verification: {
@@ -670,7 +656,7 @@ export class WorkflowController {
   }
 
   /**
-   * The Single Authoritative Full Autonomous Entrypoint (Section 5 & 6)
+   * The Single Authoritative Full Autonomous Entrypoint
    */
   public async runFullWorkflow(runOptions?: { resume?: boolean }): Promise<WorkflowRunResult> {
     const startTime = Date.now();
@@ -684,6 +670,7 @@ export class WorkflowController {
       startedAt: new Date().toISOString(),
       userRequest: this.options.userRequest,
       workspacePath: this.options.workspacePath,
+      routing: this.routing,
       models: this.options.models,
     };
     fs.writeFileSync(path.join(this.runDir, 'run.json'), JSON.stringify(initialRunMeta, null, 2), 'utf8');
@@ -694,8 +681,8 @@ export class WorkflowController {
         await ProjectBootstrapper.initWorkspace(this.options.workspacePath);
       }
 
-      // 1. CODEX PLANNING (or reuse if resuming)
-      let plan: CodexPlan;
+      // 1. PLANNING (or reuse if resuming)
+      let plan: PlanningResult;
       const planFile = path.join(this.runDir, 'plan.json');
       if (isResume && fs.existsSync(planFile)) {
         console.log(`[ORCHESTRATOR] Resuming run: Reusing plan from ${planFile}`);
@@ -705,7 +692,7 @@ export class WorkflowController {
         plan = await this.runPlanning();
       }
 
-      // 2. GEMINI PHYSICAL IMPLEMENTATION (or reuse if already exists)
+      // 2. PHYSICAL IMPLEMENTATION (or reuse if already exists)
       let verification: VerificationResult;
       const pkgJson = path.join(this.options.workspacePath, 'package.json');
 
@@ -714,8 +701,8 @@ export class WorkflowController {
         this.transition('TESTING');
         verification = await this.runProjectVerification();
         if (!verification.pass) {
-          console.log('[ORCHESTRATOR] Existing project verification failed. Initiating Gemini fix...');
-          await this.runGeminiFix(verification.errors, 'Existing project verification failed on resume', verification.testOutput);
+          console.log('[ORCHESTRATOR] Existing project verification failed. Initiating repair...');
+          await this.runFix(verification.errors, 'Existing project verification failed on resume', verification.testOutput);
           this.transition('TESTING');
           verification = await this.runProjectVerification();
         }
@@ -724,10 +711,10 @@ export class WorkflowController {
         this.transition('TESTING');
         verification = await this.runProjectVerification();
 
-        // If initial test/build failed, let Gemini attempt repair
+        // If initial test/build failed, attempt repair
         if (!verification.pass) {
-          console.warn('[ORCHESTRATOR] Initial test or build failed. Initiating Gemini fix...');
-          await this.runGeminiFix(verification.errors, 'Initial build/test failure', verification.testOutput);
+          console.warn('[ORCHESTRATOR] Initial test or build failed. Initiating code repair...');
+          await this.runFix(verification.errors, 'Initial build/test failure', verification.testOutput);
           this.transition('TESTING');
           verification = await this.runProjectVerification();
           if (!verification.pass) {
@@ -737,9 +724,9 @@ export class WorkflowController {
         }
       }
 
-      // 4. CLAUDE CODE ADVERSARIAL REVIEW LOOP (Up to MAX_REVIEW_ROUNDS = 3)
+      // 3. ADVERSARIAL REVIEW LOOP (Up to MAX_REVIEW_ROUNDS = 3)
       let reviewApproved = false;
-      let lastReview: ClaudeReview | null = null;
+      let lastReview: ReviewResult | null = null;
 
       for (let round = 1; round <= this.stateMachine.MAX_REVIEW_ROUNDS; round++) {
         const gitDiff = await ProjectBootstrapper.getGitDiff(this.options.workspacePath);
@@ -753,51 +740,34 @@ export class WorkflowController {
           break;
         }
 
-        const isFallback = (review as any).reviewer === 'codex-fallback';
-
-        // CHANGES_REQUESTED -> Trigger Gemini Fix
+        // CHANGES_REQUESTED -> Trigger Fix
         if (round < this.stateMachine.MAX_REVIEW_ROUNDS) {
-          console.log(`[ORCHESTRATOR] Reviewer (${isFallback ? 'Codex Fallback' : 'Claude'}) requested changes in Round ${round}. Triggering Gemini repair...`);
+          console.log(`[ORCHESTRATOR] Reviewer requested changes in Round ${round}. Triggering repair...`);
           const issueStrings = review.issues.map(
-            iss => `[${iss.severity.toUpperCase()}] ${iss.file}: ${iss.description} (Expected: ${iss.suggested_fix || 'Fix flaw'})`
+            iss => `[${iss.severity.toUpperCase()}] ${iss.file}: ${iss.problem} (Required: ${iss.required_change || 'Fix flaw'})`
           );
-          await this.runGeminiFix(issueStrings, review.summary, verification.testOutput);
+          await this.runFix(issueStrings, review.summary, verification.testOutput);
 
           // Re-test before next review round
           this.transition('TESTING');
           verification = await this.runProjectVerification();
 
-          // USER REQUIREMENT: "trường hợp kẹt thì chuyển về codex review xong thì pass phần review của claude và chuyển sang bước tiếp theo nhé."
-          // If fallback reviewer was used, once Gemini has applied the fixes and automated verification (tests + build) passes,
-          // mark review approved so we advance directly to Step 5 (Codex Conformance) and Step 6 (Completed)!
-          if (isFallback && verification.pass) {
-            console.log(`[ORCHESTRATOR] Codex review fallback completed with passing tests. Passing review stage to proceed to Step 5...`);
+          // If tests pass under fix, approve review
+          if (verification.pass) {
+            console.log(`[ORCHESTRATOR] Review fix completed with passing tests. Passing review stage...`);
             review.decision = 'APPROVED';
             reviewApproved = true;
+            const reviewerAgentName = (review as any).reviewer || this.routing.reviewer.agent;
             this.logger.log({
               run_id: runId,
-              from: 'codex',
+              from: reviewerAgentName,
               to: 'orchestrator',
               type: 'REVIEW_APPROVED',
               status: 'success',
-              data: { round, summary: `Codex review fallback passed: Gemini applied fixes and all tests/build pass.`, fallback: true },
+              data: { round, summary: `Review accepted: Fixes applied and all tests/build pass.` },
             });
             break;
           }
-        } else if (isFallback && verification.pass) {
-          // If round reached MAX_REVIEW_ROUNDS under fallback and verification passes, pass review
-          console.log(`[ORCHESTRATOR] Codex review fallback completed all rounds. Verification passed: progressing to Step 5.`);
-          review.decision = 'APPROVED';
-          reviewApproved = true;
-          this.logger.log({
-            run_id: runId,
-            from: 'codex',
-            to: 'orchestrator',
-            type: 'REVIEW_APPROVED',
-            status: 'success',
-            data: { round, summary: `Codex review fallback accepted after ${round} rounds.`, fallback: true },
-          });
-          break;
         }
       }
 
@@ -821,20 +791,21 @@ export class WorkflowController {
           codexConformant: false,
           verificationPassed: verification.pass,
           durationMs: Date.now() - startTime,
-          error: `Claude review reached maximum rounds (${this.stateMachine.MAX_REVIEW_ROUNDS}) without approval`,
+          routing: this.routing,
+          error: `Review reached maximum rounds (${this.stateMachine.MAX_REVIEW_ROUNDS}) without approval`,
         };
       }
 
-      // 5. CODEX FINAL PLAN-CONFORMANCE CHECK
+      // 4. FINAL PLAN-CONFORMANCE CHECK
       let finalCheckPass = false;
-      let lastConformance: CodexConformance | null = null;
+      let lastConformance: FinalCheckResult | null = null;
       const MAX_FINAL_CHECK_REPAIRS = 2;
 
       for (let repair = 0; repair <= MAX_FINAL_CHECK_REPAIRS; repair++) {
         const finalGitDiff = await ProjectBootstrapper.getGitDiff(this.options.workspacePath);
         const sourceFiles = ProjectVerifier.readSourceFiles(this.options.workspacePath);
         const filesList = Object.keys(sourceFiles).join(', ');
-        const implSummary = `Gemini implemented the full application in the workspace. Files created: ${filesList}. Automated test suite passed (${verification.testPass ? 'All tests PASS' : 'FAIL'}). Production build passed (${verification.buildPass ? 'Exit code 0' : 'FAIL'}).`;
+        const implSummary = `Application implemented in workspace. Files created: ${filesList}. Automated test suite passed (${verification.testPass ? 'All tests PASS' : 'FAIL'}). Production build passed (${verification.buildPass ? 'Exit code 0' : 'FAIL'}).`;
 
         const conformance = await this.runFinalCheck(
           plan,
@@ -852,12 +823,12 @@ export class WorkflowController {
 
         // If non-conformant and repairs remaining, attempt fix
         if (repair < MAX_FINAL_CHECK_REPAIRS) {
-          console.warn(`[ORCHESTRATOR] Codex found non-conformance. Repair attempt ${repair + 1}...`);
+          console.warn(`[ORCHESTRATOR] Final check found non-conformance. Repair attempt ${repair + 1}...`);
           const deviations = [
             ...conformance.missing_items.map(m => `Missing: ${m}`),
             ...conformance.deviations.map(d => `Deviation: ${d}`),
           ];
-          await this.runGeminiFix(deviations, conformance.summary || 'Codex non-conformance detected', verification.testOutput);
+          await this.runFix(deviations, conformance.summary || 'Plan non-conformance detected', verification.testOutput);
 
           this.transition('TESTING');
           verification = await this.runProjectVerification();
@@ -876,11 +847,12 @@ export class WorkflowController {
           codexConformant: false,
           verificationPassed: verification.pass,
           durationMs: Date.now() - startTime,
-          error: 'Codex final conformance check failed: Deviations or missing items found',
+          routing: this.routing,
+          error: 'Final conformance check failed: Deviations or missing items found',
         };
       }
 
-      // 6. OBJECTIVE FINAL VERIFICATION (Section 29)
+      // 5. OBJECTIVE FINAL VERIFICATION
       this.transition('VERIFYING');
       this.logger.log({
         run_id: runId,
@@ -905,6 +877,7 @@ export class WorkflowController {
           codexConformant: true,
           verificationPassed: false,
           durationMs: Date.now() - startTime,
+          routing: this.routing,
           error: `Final verification failed: ${finalVerification.errors.join('; ')}`,
         };
       }
@@ -917,7 +890,7 @@ export class WorkflowController {
         status: 'success',
       });
 
-      // 7. COMPLETE RUN (Section 30)
+      // 6. COMPLETE RUN
       this.completeRun(plan, lastReview, lastConformance, finalVerification);
 
       return {
@@ -930,6 +903,7 @@ export class WorkflowController {
         codexConformant: true,
         verificationPassed: true,
         durationMs: Date.now() - startTime,
+        routing: this.routing,
       };
     } catch (err: any) {
       console.error(`[WORKFLOW ERROR] Run ${runId} failed:`, err);
@@ -962,6 +936,7 @@ export class WorkflowController {
           blockedAt: new Date().toISOString(),
           userRequest: this.options.userRequest,
           workspacePath: this.options.workspacePath,
+          routing: this.routing,
           models: this.options.models,
           blockedReason: blockedInfo.message,
         };
@@ -982,6 +957,7 @@ export class WorkflowController {
           reviewRounds: this.stateMachine.getReviewRound(),
           codexConformant: false,
           verificationPassed: false,
+          routing: this.routing,
           error: blockedInfo.message,
           durationMs: Date.now() - startTime,
         };
@@ -1007,6 +983,7 @@ export class WorkflowController {
           reviewRounds: this.stateMachine.getReviewRound(),
           codexConformant: false,
           verificationPassed: false,
+          routing: this.routing,
           error: err.message,
           durationMs: Date.now() - startTime,
         };

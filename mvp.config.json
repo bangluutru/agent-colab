@@ -160,5 +160,45 @@
         "description": "Open-weight high-parameter model hosted in IDE"
       }
     ]
-  }
+  },
+  "presets": [
+    {
+      "id": "recommended",
+      "name": "Recommended (Balanced)",
+      "badge": "Default",
+      "description": "Codex Planner · Gemini Builder · Claude Reviewer (Independent Review)",
+      "planner": { "agent": "codex", "model": "gpt-6-astra" },
+      "builder": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "reviewer": { "agent": "claude", "model": "claude-sonnet-5" }
+    },
+    {
+      "id": "all_gemini",
+      "name": "All Gemini (Host & Autonomous)",
+      "badge": "Gemini Only",
+      "description": "Pure Google Antigravity / Gemini 3.8 Flash pipeline across all 5 stages",
+      "planner": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "builder": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "reviewer": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "fixer": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "final_checker": { "agent": "gemini", "model": "gemini-3.8-flash" }
+    },
+    {
+      "id": "fast",
+      "name": "Fast Delivery",
+      "badge": "High Velocity",
+      "description": "Gemini Planner · Gemini Builder · Haiku Reviewer",
+      "planner": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "builder": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "reviewer": { "agent": "claude", "model": "haiku" }
+    },
+    {
+      "id": "deep_review",
+      "name": "Deep Adversarial",
+      "badge": "Exhaustive",
+      "description": "Codex Planner · Gemini Builder · Claude Opus Reviewer",
+      "planner": { "agent": "codex", "model": "gpt-6-astra" },
+      "builder": { "agent": "gemini", "model": "gemini-3.8-flash" },
+      "reviewer": { "agent": "claude", "model": "claude-opus-5" }
+    }
+  ]
 }

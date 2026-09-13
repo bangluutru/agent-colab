@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
 /**
- * Codex Plan Output Schema (Section 7)
+ * Standard Stage-Based Output Schemas
+ * Stage contracts are strictly model-agnostic.
  */
-export const CodexPlanSchema = z.object({
+
+// ============================================================================
+// 1. Planning Result Schema (Standard contract for any Planner agent)
+// ============================================================================
+export const PlanningResultSchema = z.object({
   objective: z.string().min(1, 'Objective is required'),
   assumptions: z.array(z.string()).default([]),
   requirements: z.array(z.string()).min(1, 'At least one requirement is required'),
@@ -15,12 +20,15 @@ export const CodexPlanSchema = z.object({
   risks: z.array(z.string()).default([]),
 });
 
-export type CodexPlan = z.infer<typeof CodexPlanSchema>;
+export type PlanningResult = z.infer<typeof PlanningResultSchema>;
+// Backward-compatible alias
+export const CodexPlanSchema = PlanningResultSchema;
+export type CodexPlan = PlanningResult;
 
-/**
- * Claude Code Review Issue Schema
- */
-export const ClaudeReviewIssueSchema = z.object({
+// ============================================================================
+// 2. Review Result Schema (Standard contract for any Reviewer agent)
+// ============================================================================
+export const ReviewIssueSchema = z.object({
   severity: z.string().default('medium'),
   category: z.string().optional().default('general'),
   file: z.string().optional().default('general'),
@@ -38,21 +46,25 @@ export const ClaudeReviewIssueSchema = z.object({
   suggested_fix: issue.suggested_fix || issue.required_change || 'Fix issue',
 }));
 
-/**
- * Claude Code Review Output Schema (Section 10)
- */
-export const ClaudeReviewSchema = z.object({
+export type ReviewIssue = z.infer<typeof ReviewIssueSchema>;
+// Backward-compatible alias
+export const ClaudeReviewIssueSchema = ReviewIssueSchema;
+
+export const ReviewResultSchema = z.object({
   decision: z.enum(['APPROVED', 'CHANGES_REQUESTED']),
   summary: z.string(),
-  issues: z.array(ClaudeReviewIssueSchema).default([]),
+  issues: z.array(ReviewIssueSchema).default([]),
 });
 
-export type ClaudeReview = z.infer<typeof ClaudeReviewSchema>;
+export type ReviewResult = z.infer<typeof ReviewResultSchema>;
+// Backward-compatible alias
+export const ClaudeReviewSchema = ReviewResultSchema;
+export type ClaudeReview = ReviewResult;
 
-/**
- * Codex Final Plan Conformance Check Schema (Section 12)
- */
-export const CodexConformanceSchema = z.object({
+// ============================================================================
+// 3. Final Check Result Schema (Standard contract for any Final Checker)
+// ============================================================================
+export const FinalCheckResultSchema = z.object({
   decision: z.enum(['CONFORMANT', 'NON_CONFORMANT']),
   summary: z.string().optional(),
   missing_items: z.array(z.string()).default([]),
@@ -60,11 +72,14 @@ export const CodexConformanceSchema = z.object({
   remaining_risks: z.array(z.string()).default([]),
 });
 
-export type CodexConformance = z.infer<typeof CodexConformanceSchema>;
+export type FinalCheckResult = z.infer<typeof FinalCheckResultSchema>;
+// Backward-compatible alias
+export const CodexConformanceSchema = FinalCheckResultSchema;
+export type CodexConformance = FinalCheckResult;
 
-/**
- * Robust JSON Extractor: Parses JSON directly or extracts JSON from markdown code blocks
- */
+// ============================================================================
+// Robust JSON Extractor: Parses JSON directly or extracts from code blocks
+// ============================================================================
 export function extractJsonFromText(rawText: string): unknown {
   const trimmed = rawText.trim();
 

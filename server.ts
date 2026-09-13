@@ -2,6 +2,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import { WorkflowController } from './orchestrator/workflow.js';
+import { AgentRouter } from './orchestrator/agent-router.js';
 import { ModelSelectionConfig, WorkflowEvent } from './protocol/types.js';
 
 const PORT = 3000;
@@ -67,28 +68,48 @@ const server = http.createServer(async (req, res) => {
   // 1. GET /api/models
   if (pathname === '/api/models' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(loadConfig()));
+    const config = loadConfig();
+    res.end(JSON.stringify({
+      ...config,
+      agents: [
+        {
+          id: 'codex',
+          name: 'Codex CLI',
+          provider: 'OpenAI',
+          supportedRoles: ['PLANNER', 'BUILDER', 'REVIEWER', 'FIXER', 'FINAL_CHECKER'],
+          defaultModel: config.defaultModels?.codex || 'gpt-6-astra',
+          models: config.availableModels?.codex || []
+        },
+        {
+          id: 'gemini',
+          name: 'Antigravity / Gemini',
+          provider: 'Google Antigravity',
+          supportedRoles: ['PLANNER', 'BUILDER', 'REVIEWER', 'FIXER', 'FINAL_CHECKER'],
+          defaultModel: config.defaultModels?.gemini || 'gemini-3.8-flash',
+          models: config.availableModels?.gemini || []
+        },
+        {
+          id: 'claude',
+          name: 'Claude Code CLI',
+          provider: 'Anthropic',
+          supportedRoles: ['PLANNER', 'BUILDER', 'REVIEWER', 'FIXER', 'FINAL_CHECKER'],
+          defaultModel: config.defaultModels?.claude || 'claude-sonnet-5',
+          models: config.availableModels?.claude || []
+        }
+      ]
+    }));
     return;
   }
 
   // 2. GET /api/status - Live cluster readiness
   if (pathname === '/api/status' && req.method === 'GET') {
     const refresh = url.searchParams.get('refresh') === 'true';
-    const config = loadConfig();
-    const probeWorkflow = new WorkflowController({
-      userRequest: 'status-probe',
-      workspacePath: path.resolve(process.cwd(), 'test-workspace'),
-      models: {
-        codexModel: config.defaultModels.codex,
-        claudeModel: config.defaultModels.claude,
-        geminiModel: config.defaultModels.gemini,
-      },
-    });
+    const statusRouter = new AgentRouter();
 
     const [codexStatus, claudeStatus, geminiStatus] = await Promise.all([
-      probeWorkflow.getCodexAdapter().getStatus(),
-      probeWorkflow.getClaudeAdapter().getStatus(refresh),
-      probeWorkflow.getGeminiAdapter().getStatus(),
+      statusRouter.getCodexAdapter().getStatus(),
+      statusRouter.getClaudeAdapter().getStatus(refresh),
+      statusRouter.getGeminiAdapter().getStatus(),
     ]);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -135,6 +156,12 @@ const server = http.createServer(async (req, res) => {
         meta.hasEvents = fs.existsSync(eventsPath);
         meta.hasPlan = fs.existsSync(path.join(runFolder, 'plan.json'));
         meta.hasVerification = fs.existsSync(path.join(runFolder, 'verification.json'));
+        const routingPath = path.join(runFolder, 'routing.json');
+        if (fs.existsSync(routingPath) && !meta.routing) {
+          try {
+            meta.routing = JSON.parse(fs.readFileSync(routingPath, 'utf8'));
+          } catch {}
+        }
         const wsPath = path.resolve(WORKSPACES_DIR, id, 'project');
         const distIndex = path.join(wsPath, 'dist', 'index.html');
         meta.hasWorkspace = fs.existsSync(wsPath);
@@ -283,6 +310,8 @@ const server = http.createServer(async (req, res) => {
         openFinder: `open "${workspacePath}"`,
       },
     };
+
+    data.routing = data.files['routing.json'] || data.files['run.json']?.routing;
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
@@ -576,10 +605,19 @@ const server = http.createServer(async (req, res) => {
       reviewerFallback: fallbackActive,
     };
 
+    let routing: any = undefined;
+    const routingJsonPath = path.join(runPath, 'routing.json');
+    if (fs.existsSync(routingJsonPath)) {
+      try {
+        routing = JSON.parse(fs.readFileSync(routingJsonPath, 'utf8'));
+      } catch {}
+    }
+
     const workflow = new WorkflowController({
       userRequest: prompt,
       workspacePath: runWorkspace,
       runId,
+      routing,
       models,
       resume: true,
     });
@@ -658,6 +696,7 @@ const server = http.createServer(async (req, res) => {
           userRequest: prompt,
           workspacePath: runWorkspace,
           runId,
+          routing: payload.routing,
           models,
         });
 
@@ -676,6 +715,7 @@ const server = http.createServer(async (req, res) => {
           run_id: runId,
           status: 'REQUEST_RECEIVED',
           workspace: runWorkspace,
+          routing: workflow.getRouting(),
         }));
 
         // Execute full autonomous workflow in background (No demo shortcuts!)
@@ -703,9 +743,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   // 8. Static File Serving
-  let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
-  if (!fs.existsSync(filePath)) {
-    filePath = path.join(PUBLIC_DIR, 'index.html');
+  let filePath: string;
+  if (pathname === '/docs' || pathname === '/docs/') {
+    filePath = path.join(PUBLIC_DIR, 'docs.html');
+  } else {
+    filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(PUBLIC_DIR, 'index.html');
+    }
   }
 
   const ext = path.extname(filePath).toLowerCase();
