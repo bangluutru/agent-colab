@@ -1,0 +1,17 @@
+{
+  "name": "@agent-collab/standalone",
+  "version": "0.1.0",
+  "description": "Standalone HTTP/SSE server and CLI for Agent Collaboration",
+  "main": "src/server.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@agent-collab/orchestrator-core": "*",
+    "@agent-collab/shared": "*",
+    "zod": "^3.23.8"
+  }
+}

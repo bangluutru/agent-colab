@@ -1,0 +1,66 @@
+{
+  "name": "antigravity-orchestrator",
+  "displayName": "Antigravity Orchestrator",
+  "description": "Antigravity Orchestrator UI Mode — Multi-Agent Collaboration Cockpit",
+  "version": "0.1.0",
+  "publisher": "bangluutru",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:orchestrator.enter",
+    "onCommand:orchestrator.exit",
+    "onView:orchestratorDashboardView"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "orchestrator.enter",
+        "title": "Orchestrator: Enter UI Mode",
+        "category": "Orchestrator"
+      },
+      {
+        "command": "orchestrator.exit",
+        "title": "Orchestrator: Exit UI Mode",
+        "category": "Orchestrator"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "orchestrator.enter",
+        "key": "ctrl+shift+o",
+        "mac": "cmd+shift+o"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-orchestrator",
+          "title": "Orchestrator",
+          "icon": "media/orchestrator-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-orchestrator": [
+        {
+          "id": "orchestratorDashboardView",
+          "name": "Orchestrator Cockpit"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}

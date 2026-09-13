@@ -1,0 +1,60 @@
+{
+  "version": "1.0.0",
+  "defaultWorkflow": "standard",
+  "openOnStartup": false,
+  "rules": [
+    ".orchestrator/rules/preserve-app.md",
+    ".orchestrator/rules/design.md",
+    ".orchestrator/rules/review.md",
+    ".orchestrator/rules/verification.md"
+  ],
+  "defaultPipeline": [
+    {
+      "id": "stage-plan",
+      "name": "Plan",
+      "role": "planner",
+      "agent": "gemini",
+      "provider": "google-antigravity",
+      "model": "gemini-3.8-flash",
+      "permissions": { "read": true, "write": false, "terminal": false, "browser": false },
+      "autoContinue": false,
+      "rules": ["preserve-app.md"]
+    },
+    {
+      "id": "stage-build",
+      "name": "Build",
+      "role": "builder",
+      "agent": "gemini",
+      "provider": "google-antigravity",
+      "model": "gemini-3.8-flash",
+      "permissions": { "read": true, "write": true, "terminal": true, "browser": false },
+      "autoContinue": true,
+      "rules": ["preserve-app.md", "design.md"],
+      "verification": { "build": true, "test": true }
+    },
+    {
+      "id": "stage-review",
+      "name": "Review",
+      "role": "reviewer",
+      "agent": "claude",
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "permissions": { "read": true, "write": false, "terminal": false, "browser": false },
+      "autoContinue": false,
+      "rules": ["preserve-app.md", "review.md"],
+      "verification": { "reviewerApproval": true }
+    },
+    {
+      "id": "stage-verify",
+      "name": "Verify",
+      "role": "final_checker",
+      "agent": "codex",
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "permissions": { "read": true, "write": false, "terminal": true, "browser": true },
+      "autoContinue": true,
+      "rules": ["verification.md"],
+      "verification": { "customCommand": "npm test" }
+    }
+  ]
+}

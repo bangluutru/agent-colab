@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — AI Team Agent Collaboration</title>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('ai_team_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var activeTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+        if (activeTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.classList.remove('dark-theme');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    body {
+      overflow-y: auto;
+      background: var(--bg);
+      color: var(--text-primary);
+    }
+    .docs-page-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px 24px;
+    }
+    .docs-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .docs-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .docs-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 13px;
+      transition: all var(--transition-fast);
+    }
+    .docs-back-btn:hover {
+      background: var(--primary-subtle);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .docs-hero {
+      margin-bottom: 40px;
+    }
+    .docs-hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .docs-hero p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .docs-article {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 28px;
+    }
+    .docs-article h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .docs-article h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 10px 0;
+      color: var(--text-primary);
+    }
+    .docs-article p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 14px;
+    }
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+  <div class="docs-page-container">
+    <header class="docs-header-bar">
+      <div class="docs-brand">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#2563EB" />
+          <path d="M16 6L8 24H12.5L14.2 19.8H17.8L19.5 24H24L16 6ZM15.1 16.2L16 13.5L16.9 16.2H15.1Z" fill="white" />
+        </svg>
+        <div>
+          <strong style="font-size: 16px;">AI Team</strong>
+          <span class="version-tag" style="margin-left: 6px;">v0.1.0</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="top-icon-btn" id="docs-btn-theme" title="Toggle Theme" style="border: 1px solid var(--border); border-radius: 8px; padding: 6px;">
+          🌓
+        </button>
+        <a href="/" class="docs-back-btn">
+          <span>←</span>
+          <span>Back to App</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="docs-hero">
+      <span class="badge-tag">Documentation &amp; Guide</span>
+      <h1 style="margin-top: 10px;">AI Team — Multi-Agent Collaboration Protocol</h1>
+      <p>A unified orchestrator uniting OpenAI Codex, Google Gemini, and Anthropic Claude into a continuous, adversarial engineering team.</p>
+    </div>
+
+    <!-- Section 1: Architecture -->
+    <article class="docs-article">
+      <h2><span>⚡</span> 1. Autonomous 3-Stage Collaboration Flow</h2>
+      <p>Instead of relying on a single prompt or single model, <strong>AI Team</strong> delegates work into specialized lifecycle roles with strict quality gates:</p>
+      
+      <div class="docs-steps-grid">
+        <div class="docs-step-card">
+          <div class="step-num">STAGE 01</div>
+          <strong>PLAN</strong>
+          <p>Architectural breakdown. Analyzes requirements, checks project constraints, formulates file structure, and emits a structured <code>plan.json</code>.</p>
+        </div>
+        <div class="docs-step-card">
+          <div class="step-num">STAGE 02</div>
+          <strong>BUILD</strong>
+          <p>Physical construction. Initializes packages, writes source code, and creates automated test suites.</p>
+        </div>
+        <div class="docs-step-card">
+          <div class="step-num">STAGE 03</div>
+          <strong>REVIEW</strong>
+          <p>Adversarial code review. Inspects git diff for regressions, edge cases, and safety vulnerabilities before approval.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 24px;">Zero-Data-Loss Protocol</h3>
+      <p>All agent activities, tool executions, and file diffs are appended to an immutable <code>events.jsonl</code> event stream in each run's isolated workspace directory. Nothing is lost across context transitions.</p>
+    </article>
+
+    <!-- Section 2: Model-Agnostic Routing -->
+    <article class="docs-article">
+      <h2><span>🔀</span> 2. Model-Agnostic Routing Architecture</h2>
+      <p>Stages are decoupled from specific vendors. You can freely assign any agent (Codex, Gemini, Claude) and any model to any role via the interactive UI popovers or team settings.</p>
+
+      <div class="docs-table-wrap">
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Team Preset</th>
+              <th>Planner</th>
+              <th>Builder</th>
+              <th>Reviewer</th>
+              <th>Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Recommended</strong></td>
+              <td>Codex (GPT-6 Astra)</td>
+              <td>Gemini (3.8 Flash)</td>
+              <td>Claude (Sonnet 5)</td>
+              <td>Balanced production applications with multi-vendor adversarial review.</td>
+            </tr>
+            <tr>
+              <td><strong>Fast Delivery</strong></td>
+              <td>Gemini (3.8 Flash)</td>
+              <td>Gemini (3.8 Flash)</td>
+              <td>Claude (3.5 Haiku)</td>
+              <td>Rapid MVPs, prototypes, and fast iterative workflows.</td>
+            </tr>
+            <tr>
+              <td><strong>Deep Adversarial</strong></td>
+              <td>Codex (GPT-6 Astra)</td>
+              <td>Gemini (3.8 Flash)</td>
+              <td>Claude (Opus 4)</td>
+              <td>Security-critical infrastructure, rigorous audit suites, and complex algorithmic tasks.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- Section 3: CLI & API -->
+    <article class="docs-article">
+      <h2><span>💻</span> 3. Terminal CLI &amp; REST API Reference</h2>
+      <p>You can execute full collaborative workflows from your terminal or integrate via standard HTTP endpoints:</p>
+
+      <pre class="docs-code-block"><code># Start an autonomous run with default configuration
+npx tsx cli.ts --prompt "Build a real-time Markdown editor with live preview"
+
+# Custom stage assignment
+npx tsx cli.ts --prompt "Build a REST API" --planner gemini --builder gemini --reviewer claude</code></pre>
+
+      <h3 style="margin-top: 20px;">Key REST Endpoints</h3>
+      <div class="docs-table-wrap">
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Method</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/api/runs</code></td>
+              <td><code>POST</code></td>
+              <td>Submit new prompt with custom routing to launch autonomous execution.</td>
+            </tr>
+            <tr>
+              <td><code>/api/runs/:id</code></td>
+              <td><code>GET</code></td>
+              <td>Fetch run status, logs, review rounds, and workspace metadata.</td>
+            </tr>
+            <tr>
+              <td><code>/api/runs/:id/stream</code></td>
+              <td><code>GET (SSE)</code></td>
+              <td>Real-time Server-Sent Events stream for live status updates.</td>
+            </tr>
+            <tr>
+              <td><code>/api/status</code></td>
+              <td><code>GET</code></td>
+              <td>Verify CLI and API connectivity for all connected agent engines.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- Section 4: Troubleshooting -->
+    <article class="docs-article">
+      <h2><span>🛠️</span> 4. Troubleshooting &amp; Diagnostics</h2>
+      <p>If Claude Code shows <em>Blocked</em> due to subscription auth, run this command in your terminal:</p>
+      <pre class="docs-code-block"><code>claude auth login --email haibangtran@gmail.com</code></pre>
+      <p>After authentication is complete, click <strong>Re-probe All Agent Connections</strong> in the web settings drawer or status bar.</p>
+    </article>
+  </div>
+
+  <script>
+    const btnTheme = document.getElementById('docs-btn-theme');
+    if (btnTheme) {
+      btnTheme.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.contains('dark-theme');
+        const next = isDark ? 'light' : 'dark';
+        if (next === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.classList.remove('dark-theme');
+        }
+        localStorage.setItem('ai_team_theme', next);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -4,10 +4,17 @@
   "description": "Multi-agent autonomous collaboration MVP: Antigravity IDE / Gemini 3.8 + Codex CLI + Claude Code CLI",
   "main": "dist/orchestrator/workflow.js",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "shared"
+  ],
   "scripts": {
     "start": "tsx cli.ts",
     "dev": "tsx watch --clear-screen=false server.ts",
     "ui": "tsx watch --clear-screen=false server.ts",
+    "ext:build": "sh -c \"cd packages/antigravity-extension && npm run build && npx -y @vscode/vsce package --no-dependencies --skip-license --allow-missing-repository -o antigravity-orchestrator-0.1.0.vsix\"",
+    "ext:install": "\"/Applications/Antigravity IDE.app/Contents/Resources/app/bin/antigravity-ide\" --install-extension packages/antigravity-extension/antigravity-orchestrator-0.1.0.vsix --force",
     "test": "tsx tests/state-machine.test.ts && tsx tests/schema.test.ts && tsx tests/fallback-review.test.ts && tsx tests/model-agnostic-routing.test.ts",
     "gate-0": "tsx scripts/gate-0.ts",
     "diagnose:claude": "tsx scripts/diagnose-claude.ts",
@@ -31,6 +38,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
+    "@types/vscode": "^1.137.0",
     "tsx": "^4.19.1",
     "typescript": "^5.5.4"
   }

@@ -1,0 +1,14 @@
+{
+  "name": "@agent-collab/shared",
+  "version": "0.1.0",
+  "description": "Shared protocol, schemas, and types for Agent Collaboration Orchestrator",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@agent-collab/orchestrator-ui",
+  "version": "0.1.0",
+  "description": "Embeddable Cockpit UI for Antigravity Extension and Standalone App",
+  "main": "src/index.html",
+  "type": "module"
+}
