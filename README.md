@@ -121,7 +121,7 @@ npm run test:interruption
 
 ## Reports & Artifacts
 
-- [Autonomous E2E Execution Report](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-colab/docs/AUTONOMOUS_E2E_REPORT.md)
-- [Gate 0 Environment Audit Report](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-colab/docs/GATE_0_REPORT.md)
-- [Model Selection Guide](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-colab/docs/MODEL_SELECTION_GUIDE.md)
+- [Autonomous E2E Execution Report](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-collab/docs/AUTONOMOUS_E2E_REPORT.md)
+- [Gate 0 Environment Audit Report](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-collab/docs/GATE_0_REPORT.md)
+- [Model Selection Guide](file:///Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-collab/docs/MODEL_SELECTION_GUIDE.md)
 

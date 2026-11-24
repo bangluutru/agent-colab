@@ -132,7 +132,7 @@ Executed `npm run diagnose:claude`:
          CLAUDE CODE CLI DIAGNOSTIC PROBE            
 ======================================================
 [INFO] Node process user:       tranhaibang
-[INFO] Process CWD:             /Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-colab
+[INFO] Process CWD:             /Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-collab
 [INFO] HOME:                    /Users/tranhaibang
 [INFO] SHELL:                   /bin/zsh
 [INFO] Canonical binary:        /Users/tranhaibang/.local/bin/claude
@@ -185,7 +185,7 @@ claude -p --model claude-sonnet-5 "Reply with exactly: CLAUDE_AUTH_OK"
 
 Once the terminal prints `CLAUDE_AUTH_OK`, run:
 ```bash
-cd /Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-colab
+cd /Users/tranhaibang/.gemini/antigravity-ide/scratch/xtools/agent-collab
 npm run diagnose:claude
 npm run gate-0
 ```
